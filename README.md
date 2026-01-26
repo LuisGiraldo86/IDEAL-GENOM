@@ -1,5 +1,10 @@
 # IDEAL-GENOM
 
+[![Documentation Status](https://readthedocs.org/projects/verus-ideal-genom/badge/?version=latest)](https://verus-ideal-genom.readthedocs.io/en/latest/)
+[![PyPI version](https://img.shields.io/pypi/v/ideal-genom.svg)](https://pypi.org/project/ideal-genom/)
+[![MIT License](https://img.shields.io/pypi/l/ideal-genom.svg)](https://pypi.org/project/ideal-genom/)
+
+
 **IDEAL-GENOM** is a comprehensive Python package for automated, reproducible analysis of human genotype data. Currently it has implemented three pipelines: genomic quality control (QC) for case/control studies; processing VCF files after imputation; and genome-wide association studies (GWAS). It wraps years of research at CGE Tübingen, leveraging PLINK 1.9/2.0, GCTA and bcftools and also providing rich reporting and visualizations.
 
 ## Key Features
