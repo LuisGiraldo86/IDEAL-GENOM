@@ -519,7 +519,7 @@ class GWAS_GLMM:
 
         # Step 2: Compute GRM
         logger.info("\033[1;33m[2/5] Computing genetic relationship matrix (GRM)...\033[0m")
-        self.compute_grm(pruned_file=pruned_file, max_threads=max_threads)
+        self.compute_grm(pruned_file=pruned_file, max_threads=max_threads, grm_cutoff=grm_cutoff)
         logger.info("\033[1;32m✓ GRM computation completed\033[0m\n")
 
         # Step 3: Run GWAS with GLMM
