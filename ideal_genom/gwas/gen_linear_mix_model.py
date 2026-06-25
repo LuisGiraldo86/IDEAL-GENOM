@@ -499,6 +499,7 @@ class GWAS_GLMM:
         anno_source = glmm_params.get("anno_source", 'ensembl')
         gtf_path    = glmm_params.get("gtf_path", None)
         max_threads = glmm_params.get("max_threads", None)
+        grm_cutoff  = glmm_params.get("grm_cutoff", 0.05)
         pruned_file = glmm_params.get("pruned_file")
 
         if isinstance(pruned_file, str):
