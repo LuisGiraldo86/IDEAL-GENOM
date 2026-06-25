@@ -6,8 +6,9 @@ import pandas as pd
 
 from pathlib import Path
 
-from ..core.executor import shell_do
+from ..core.executor import run_plink
 from ..core.get_references import FetcherLDRegions, Fetcher1000Genome
+from ..core.utils import get_optimal_threads, get_available_memory
 from ..qc.ancestry_qc import ReferenceGenomicMerger
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -49,7 +50,11 @@ class FstSummary:
         if not isinstance(build, str):
             raise TypeError("build should be a string")
         if build not in ['37', '38']:
-            raise ValueError("build should be either '37' or '38'") 
+            raise ValueError("build should be either '37' or '38'")
+        if not isinstance(reference_files, dict):
+            raise TypeError("reference_files should be a dictionary")
+        if not isinstance(high_ld_file, Path):
+            raise TypeError("high_ld_file should be a Path object")
         if not high_ld_file.is_file():
             logger.info(f"High LD file not found at {high_ld_file}")
             logger.info('High LD file will be fetched from the package')
@@ -70,6 +75,12 @@ class FstSummary:
         self.high_ld_regions = high_ld_file
         self.build = build
 
+        # Convert reference_files values to Path objects if they are strings
+        if reference_files:
+            self.reference_files = {k: Path(v) if isinstance(v, str) else v for k, v in reference_files.items()}
+        else:
+            self.reference_files = reference_files
+
         if not reference_files:
 
             logger.info(f"No reference files provided. Fetching 1000 Genomes reference data for build {self.build}")
@@ -85,7 +96,7 @@ class FstSummary:
                 'psam': fetcher.psam_file
             }
 
-        self.results_dir = self.output_path / 'fst_results' 
+        self.results_dir = self.output_path / 'fst_results'
         self.results_dir.mkdir(parents=True, exist_ok=True)
 
         self.merging_dir = self.results_dir / 'merging'
@@ -138,7 +149,7 @@ class FstSummary:
             input_name= self.input_name,
             output_path= self.merging_dir, 
             output_name= 'cleaned-with-ref',
-            high_ld_regions =self.high_ld_regions, 
+            high_ld_regions_file=self.high_ld_regions,
             reference_files = self.reference_files,
         )
 
@@ -272,17 +283,28 @@ class FstSummary:
 
         input_file = self.merging_dir / 'cleaned-with-ref-merged'
 
+        max_threads = get_optimal_threads()
+        memory = get_available_memory()
+
         for key in files.keys():
 
             keep_file, within_file = files[key]
             output_file = self.results_dir / f'keep-{key}-StPop'
 
-            plink_cmd1 = f"plink --bfile {input_file} --keep {keep_file} --make-bed --out {output_file}"
-            plink_cmd2 = f"plink --bfile {output_file} --fst --within {within_file} --out {self.results_dir / f'fst-{key}-StPop'}"
-
-            plink_cmds = [plink_cmd1, plink_cmd2]
-            for cmd in plink_cmds:
-                shell_do(cmd, log=True)
+            run_plink([
+                '--bfile', str(input_file),
+                '--keep', str(keep_file),
+                '--threads', str(max_threads),
+                '--memory', str(int(memory)),
+                '--make-bed',
+                '--out', str(output_file)
+            ])
+            run_plink([
+                '--bfile', str(output_file),
+                '--fst',
+                '--within', str(within_file),
+                '--out', str(self.results_dir / f'fst-{key}-StPop')
+            ])
         logger.info("Fst computation completed for all populations.")
 
         return
@@ -328,6 +350,8 @@ class FstSummary:
         for key in files.keys():
         
             log_file = files[key]
+            fst = None
+            weighted_fst = None
             with open(log_file, 'r') as f:
 
                 lines = f.readlines()
@@ -336,7 +360,12 @@ class FstSummary:
                         fst = line.split(':')[1].strip()
                     if line.startswith('Weighted Fst'):
                         weighted_fst = line.split(':')[1].strip()
-                df_summary = pd.concat([df_summary, pd.DataFrame({'SuperPop': [key], 'Fst': [fst], 'WeightedFst': [weighted_fst]})], ignore_index=True)
+
+            if fst is None or weighted_fst is None:
+                logger.warning(f"Could not find Fst values in {log_file}, skipping population {key}")
+                continue
+
+            df_summary = pd.concat([df_summary, pd.DataFrame({'SuperPop': [key], 'Fst': [fst], 'WeightedFst': [weighted_fst]})], ignore_index=True)
 
         df_summary.to_csv(
             self.results_dir / 'fst_summary.csv',
@@ -348,5 +377,63 @@ class FstSummary:
         for file in self.results_dir.iterdir():
             if file.is_file() and (file.suffix == '.bed' or file.suffix == '.bim' or file.suffix == '.fam'):
                 file.unlink()
-        
+
         return df_summary
+
+    def execute_fst_pipeline(self, fst_params: dict) -> None:
+        """
+        Execute the complete Fst analysis pipeline.
+
+        This method runs the full Fst workflow:
+        1. Merging reference and study data
+        2. Tagging samples with their (super-)population
+        3. Computing Fst between the study population and each reference super-population
+        4. Summarizing the Fst results into a report
+
+        Parameters
+        ----------
+        fst_params : dict
+            Dictionary containing pipeline parameters. Required keys:
+            - ind_pair : list - LD pruning parameters [window, step, r2]
+
+        Returns
+        -------
+        None
+        """
+
+        fst_steps = {
+            'merge_study_reference': (self.merge_reference_study, {"ind_pair": fst_params['ind_pair']}),
+            'add_population_tags':   (self.add_population_tags, {}),
+            'compute_fst':            (self.compute_fst, {}),
+            'report_fst':             (self.report_fst, {}),
+        }
+
+        step_description = {
+            'merge_study_reference': "Merging reference genome with study genome",
+            'add_population_tags':   "Tagging samples with their (super-)population",
+            'compute_fst':            "Computing Fst between study and reference populations",
+            'report_fst':             "Summarizing Fst results",
+        }
+
+        logger.info("=" * 70)
+        logger.info("Starting Fst Pipeline")
+        logger.info("=" * 70)
+
+        result = None
+        for step_num, (name, (func, params)) in enumerate(fst_steps.items(), 1):
+            logger.info(f"\nSTEP {step_num}/{len(fst_steps)}: {step_description[name]}")
+            logger.info("-" * 70)
+            try:
+                result = func(**params)
+                logger.info(f"✓ Step {step_num} completed successfully")
+            except Exception as e:
+                logger.error(f"✗ Step {step_num} failed: {str(e)}")
+                raise
+
+        self.fst_summary = result
+
+        logger.info("=" * 70)
+        logger.info("Fst Pipeline completed successfully")
+        logger.info("=" * 70)
+
+        return
