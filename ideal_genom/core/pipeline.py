@@ -870,6 +870,12 @@ class PipelineExecutor:
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.INFO)
         
+        # Formatter
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+
         # File handler (only if not dry run)
         if not self.dry_run:
             log_dir = os.path.join(self.base_output_dir, 'pipeline_logs')
@@ -877,17 +883,9 @@ class PipelineExecutor:
             log_file = os.path.join(log_dir, f'{self.pipeline_name}.log')
             file_handler = logging.FileHandler(log_file)
             file_handler.setLevel(logging.DEBUG)
-        # Formatter
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        )
-        
-        # Add file handler only if not dry run
-        if not self.dry_run:
             file_handler.setFormatter(formatter)
             pipeline_logger.addHandler(file_handler)
-        
+
         console_handler.setFormatter(formatter)
         pipeline_logger.addHandler(console_handler)
         
