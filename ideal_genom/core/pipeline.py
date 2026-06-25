@@ -784,8 +784,9 @@ class PipelineExecutor:
         # Define step dependencies for genomic QC workflow
         dependencies = {
             'variant_qc': ['sample_qc'],
-            'ancestry_qc': ['sample_qc'],  
-            'population_analysis': []  # Can run standalone or after any QC step
+            'ancestry_qc': ['sample_qc'],
+            'population_analysis': [],  # Can run standalone or after any QC step
+            'fst': [],  # Can run standalone or after any QC step
         }
         
         # Check for missing dependencies and issue warnings
