@@ -146,27 +146,40 @@ class GWAS_GLMM:
 
         return
     
-    def compute_grm(self, pruned_file: Path, max_threads: Optional[int] = None) -> None:
-        
+    def compute_grm(self, pruned_file: Path, max_threads: Optional[int] = None, grm_cutoff: float = 0.05) -> None:
+
         """Compute the Genetic Relationship Matrix (GRM) using GCTA software.
 
-        This method computes the GRM for the given input data using the GCTA software. 
+        This method computes the GRM for the given input data using the GCTA software.
         It allows for multi-threaded execution and can optionally recompute the GRM if specified.
+        If `recompute` is False, it instead checks that a previously computed sparse GRM
+        already exists in the results directory.
 
         Parameters
         ----------
+        pruned_file : Path
+            Path (without extension) to the LD-pruned PLINK file set used to build the GRM.
         max_threads : int, optional
-            The maximum number of threads to use for computation. If not specified, 
-            it defaults to the number of available CPU cores minus two. 
+            The maximum number of threads to use for computation. If not specified,
+            it defaults to the number of available CPU cores minus two.
             If the number of CPU cores cannot be determined, it defaults to 10.
+        grm_cutoff : float, optional
+            Relatedness cutoff passed to GCTA's `--make-bK-sparse` when sparsifying the GRM.
+            Must be between 0 and 1. Default is 0.05.
 
         Returns
         -------
-        dict 
-            A dictionary containing the following keys:
-                - 'pass' (bool): Indicates whether the process completed successfully.
-                - 'step' (str): The name of the step performed ('compute_grm').
-                - 'output' (dict): A dictionary containing the output file paths with the key 'gcta_out'.
+        None
+
+        Raises
+        ------
+        TypeError
+            If `max_threads` is not of type int, or if `grm_cutoff` is not of type float.
+        ValueError
+            If `max_threads` is not a positive integer, or if `grm_cutoff` is not between 0 and 1.
+        FileNotFoundError
+            If the pruned PLINK file set is not found, or if `recompute` is False and the
+            previously computed sparse GRM files are not found in the results directory.
         """
 
         results_dir= self.results_dir
@@ -185,22 +198,27 @@ class GWAS_GLMM:
             raise FileNotFoundError(f"fam file with pruned data was not found: {pruned_file.with_suffix('.fam')}")
 
         if recompute:
-                # gcta commands as lists
-                gcta_args1 = [
-                    '--bfile', str(pruned_file),
-                    '--make-grm',
-                    '--thread-num', str(threads),
-                    '--out', str(results_dir / f'{input_name}_grm')
-                ]
-                gcta_args2 = [
-                    '--grm', str(results_dir / f'{input_name}_grm'),
-                    '--make-bK-sparse', '0.05',
-                    '--out', str(results_dir / f'{input_name}_sparse')
-                ]
+            # gcta commands as lists
+            gcta_args1 = [
+                '--bfile', str(pruned_file),
+                '--make-grm',
+                '--thread-num', str(threads),
+                '--out', str(results_dir / f'{input_name}_grm')
+            ]
+            gcta_args2 = [
+                '--grm', str(results_dir / f'{input_name}_grm'),
+                '--make-bK-sparse', str(grm_cutoff),
+                '--out', str(results_dir / f'{input_name}_sparse')
+            ]
 
-                # run gcta commands
-                run_gcta(gcta_args1)
-                run_gcta(gcta_args2)
+            # run gcta commands
+            run_gcta(gcta_args1)
+            run_gcta(gcta_args2)
+        else:
+            if not (results_dir / f'{input_name}_sparse.grm.id').exists():
+                raise FileNotFoundError(f"File {input_name}_sparse.grm.id is not in the results directory.")
+            if not (results_dir / f'{input_name}_sparse.grm.sp').exists():
+                raise FileNotFoundError(f"File {input_name}_sparse.grm.sp is not in the results directory.")
         return
     
     def run_gwas_glmm(self, maf: float = 0.01) -> None:
