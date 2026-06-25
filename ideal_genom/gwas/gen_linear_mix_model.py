@@ -187,9 +187,19 @@ class GWAS_GLMM:
         input_name = self.input_name
         recompute  = self.recompute
 
+        if max_threads is not None and not isinstance(max_threads, int):
+            raise TypeError("max_threads should be of type int.")
+        if max_threads is not None and max_threads <= 0:
+            raise ValueError("max_threads should be a positive integer.")
+
+        if not isinstance(grm_cutoff, float):
+            raise TypeError("grm_cutoff should be of type float.")
+        if grm_cutoff < 0 or grm_cutoff > 1:
+            raise ValueError("grm_cutoff should be between 0 and 1.")
+
         # compute the number of threads to use
         threads = max_threads or get_optimal_threads()
-        
+
         if not pruned_file.with_suffix('.bed').exists():
             raise FileNotFoundError(f"bed file with pruned data was not found: {pruned_file.with_suffix('.bed')}")
         if not pruned_file.with_suffix('.bim').exists():
