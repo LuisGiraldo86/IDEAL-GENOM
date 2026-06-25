@@ -126,6 +126,22 @@ pipeline:
         generate_all_plots: true
         grid_summary: true
 
+    # Step 5: Fst Statistics
+    # Computes Fst (fixation index) between the study population and each 1000 Genomes super-population
+    - name: "fst"
+      enabled: false
+      module: "ideal_genom.population.fst_stats"
+      class: "FstSummary"
+      init_params:
+        input_path: "${steps.variant_qc.clean_dir}"
+        input_name: "${steps.variant_qc.output_name}"
+        output_path: "${base_output_dir}"
+        high_ld_file: "/path/to/high_ld_regions.txt"
+        build: "38"
+        recompute_merge: true
+      execute_params:
+        ind_pair: [50, 5, 0.2]  # LD pruning: [window_size, step_size, r2_threshold]
+
 # Global settings
 settings:
   # Logging configuration

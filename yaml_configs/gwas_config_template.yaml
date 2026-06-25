@@ -84,6 +84,7 @@ pipeline:
         # GRM computation parameters
         pruned_file: "${steps.preparatory.pruned_file}"    # Path to pruned PLINK files from preparatory step (without extension)
         max_threads: null          # Maximum threads for GRM computation (null for auto-detect)
+        grm_cutoff: 0.05           # Relatedness cutoff for GRM sparsification, --make-bK-sparse (must be between 0 and 1)
         
         # Annotation parameters
         gtf_path: null             # Path to custom GTF file for annotation (null for default)
