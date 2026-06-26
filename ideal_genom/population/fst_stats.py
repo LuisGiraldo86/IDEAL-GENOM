@@ -223,7 +223,8 @@ class FstSummary:
 
         df_merged_fam = pd.read_csv(merged_fam, sep=r"\s+", header=None, engine='python')
         df_merged_fam = df_merged_fam.rename(columns={0: 'ID1', 1: 'ID2'})
-        #df_merged_fam['SuperPop'] = 'StPop'
+        df_merged_fam['ID1'] = df_merged_fam['ID1'].astype(str)
+        df_merged_fam['ID2'] = df_merged_fam['ID2'].astype(str)
 
         logger.info(f"Merged BIM file loaded from {merged_fam}")
         logger.info(f'Merged BIM file columns: {df_merged_fam.columns.tolist()}')
