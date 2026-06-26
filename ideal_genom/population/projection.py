@@ -1949,26 +1949,22 @@ class DimensionalityReductionPipeline:
         # Calculate total combinations
         results['total_combinations'] = len(results['umap_combinations']) + len(results['tsne_combinations'])
         
-        # Save summary of all parameter combinations
-        summary_data = []
-        
-        for combo in results['umap_combinations']:
-            combo_summary = {'method': 'UMAP'}
-            combo_summary.update(combo)
-            summary_data.append(combo_summary)
-        
-        for combo in results['tsne_combinations']:
-            combo_summary = {'method': 't-SNE'}
-            combo_summary.update(combo)
-            summary_data.append(combo_summary)
-        
-        if summary_data:
-            import pandas as pd
-            summary_df = pd.DataFrame(summary_data)
-            summary_file = self.results_dir / 'parameter_grid_summary.tsv'
-            summary_df.to_csv(summary_file, sep='\t', index=False)
-            results['files_created'].append(str(summary_file))
-            logger.info(f"Parameter grid summary saved to: {summary_file}")
+        # Save method-specific summaries to avoid cross-method NaN columns
+        if results['umap_combinations']:
+            umap_df = pd.DataFrame(results['umap_combinations'])
+            umap_df.insert(0, 'method', 'UMAP')
+            umap_summary_file = self.results_dir / 'umap_grid_summary.tsv'
+            umap_df.to_csv(umap_summary_file, sep='\t', index=False)
+            results['files_created'].append(str(umap_summary_file))
+            logger.info(f"UMAP grid summary saved to: {umap_summary_file}")
+
+        if results['tsne_combinations']:
+            tsne_df = pd.DataFrame(results['tsne_combinations'])
+            tsne_df.insert(0, 'method', 't-SNE')
+            tsne_summary_file = self.results_dir / 'tsne_grid_summary.tsv'
+            tsne_df.to_csv(tsne_summary_file, sep='\t', index=False)
+            results['files_created'].append(str(tsne_summary_file))
+            logger.info(f"t-SNE grid summary saved to: {tsne_summary_file}")
         
         logger.info("=" * 80)
         logger.info("PARAMETER GRID EXPLORATION COMPLETED")
