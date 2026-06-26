@@ -2362,10 +2362,14 @@ class AncestryQCReport:
                 raise ValueError("ancestry_fails is not set. Please set it using the ancestry_fails attribute or pass it during initialization.")
             logger.info("STEP: Generating PCA plots: excluding ancestry outliers")
 
-            df_outliers = pd.read_csv(self.ancestry_fails, sep=r'\s+', header=None, engine='python')
-            df_outliers.columns = ['ID1', 'ID2']
-            df_outliers['ID1'] = df_outliers['ID1'].astype(str)
-            df_outliers['ID2'] = df_outliers['ID2'].astype(str)
+            if self.ancestry_fails.stat().st_size == 0:
+                logger.info("No ancestry outliers found; 'exclude_outliers' plot will show all samples.")
+                df_outliers = pd.DataFrame(columns=['ID1', 'ID2'])
+            else:
+                df_outliers = pd.read_csv(self.ancestry_fails, sep=r'\s+', header=None, engine='python')
+                df_outliers.columns = ['ID1', 'ID2']
+                df_outliers['ID1'] = df_outliers['ID1'].astype(str)
+                df_outliers['ID2'] = df_outliers['ID2'].astype(str)
 
             df_eigenvec = df_eigenvec.merge(df_outliers, on=['ID1', 'ID2'], how='left', indicator=True)
             df_eigenvec = df_eigenvec[df_eigenvec['_merge'] == 'left_only'].drop(columns=['_merge'])
