@@ -380,12 +380,17 @@ class SampleQC:
 
         logger.info(f"STEP: Missing genotype check.")
 
+        if self.processed_files is not None:
+            missingness_input = self.processed_files
+        else:
+            missingness_input = self.input_name
+
         max_threads = get_optimal_threads()
         memory = get_available_memory()
 
         # PLINK2 command: run missingness across file genome-wide
         run_plink2([
-            '--bfile', str(self.pruned_file),
+            '--bfile', str(self.input_path / missingness_input),
             '--missing',
             '--memory', str(memory),
             '--threads', str(max_threads),
