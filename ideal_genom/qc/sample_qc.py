@@ -1435,7 +1435,6 @@ class SampleQCReport:
 
         plt.tight_layout()
         plt.savefig(plots_dir / f"call_rate_{threshold}_histogram.{format}", dpi=400)
-        plt.show(block=False)
         plt.close()
 
         fig2, axes2 = plt.subplots(1, 3, figsize=(15, 5), sharey=False)
@@ -1452,7 +1451,7 @@ class SampleQCReport:
         # Second subplot: Number of samples vs F_MISS
         df_call_rate_sorted = pd.DataFrame({
             'Index': range(len(df_call_rate['F_MISS'])),
-            'F_MISS': sorted(df_call_rate['F_MISS'])
+            'F_MISS': np.sort(df_call_rate['F_MISS'].to_numpy())
         })
 
         axes2[1] = sns.scatterplot(
@@ -1490,7 +1489,6 @@ class SampleQCReport:
 
         plt.tight_layout()
         plt.savefig(plots_dir / f"call_rate_{threshold}_scatterplot.{format}", dpi=400)
-        plt.show(block=False)
         plt.close()
 
         return
@@ -1618,7 +1616,6 @@ class SampleQCReport:
         
         plt.tight_layout()
         plt.savefig(plots_dir / f'sex_check.{format}', dpi=400)
-        plt.show(block=False)
         plt.close()
 
         return
@@ -1747,7 +1744,6 @@ class SampleQCReport:
         else:
             plt.savefig(plots_dir / f"heterozygosity_rate_less_{maf}_histogram.{format}", dpi=400)
         
-        plt.show(block=False)
         plt.close()
 
         df_het['Deviated'] = 'Not Excluded'
@@ -1781,12 +1777,11 @@ class SampleQCReport:
             plt.savefig(plots_dir / f"heterozygosity_rate_greater_{maf}_scatterplot.{format}", dpi=400)
         else:
             plt.savefig(plots_dir / f"heterozygosity_rate_less_{maf}_scatterplot.{format}", dpi=400)
-        plt.show(block=False)
         plt.close()
 
         return
 
-    def report_ibd_analysis(self, genome: Path, ibd_threshold: float = 0.185, chunk_size: int = 100000) -> None:
+    def report_ibd_analysis(self, genome: Path, ibd_threshold: float = 0.185, chunk_size: int = 1_000_000) -> None:
         """Generate visualization of IBD (Identity By Descent) analysis results.
         
         This method processes IBD analysis results and creates a histogram showing the
