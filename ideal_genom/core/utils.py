@@ -16,8 +16,10 @@ def get_optimal_threads(reserve: int = 2, default: int = 10, max_threads: Option
     """
     Calculate optimal thread count for genomic analysis operations.
     
-    Determines the number of threads to use based on available CPU cores,
-    reserving some cores for system operations with robust fallback handling.
+    Determines the number of threads to use based on the CPU cores actually
+    schedulable by this process (respecting affinity restrictions from
+    taskset/cpuset cgroups/SLURM allocations where available), reserving
+    some cores for system operations with robust fallback handling.
     
     Parameters
     ----------
@@ -48,19 +50,36 @@ def get_optimal_threads(reserve: int = 2, default: int = 10, max_threads: Option
     
     # Try multiple methods to get CPU count
     cpu_count = None
-    
-    # Method 1: os.cpu_count() - preferred
+
+    # Method 1: os.sched_getaffinity() - preferred, respects CPU affinity
+    # restrictions (taskset, cpuset cgroups, SLURM/PBS allocations on a
+    # shared node). os.cpu_count() ignores these and reports the total
+    # cores on the machine, which can lead to requesting far more PLINK
+    # threads than the process can actually schedule on.
     try:
-        cpu_count = os.cpu_count()
+        cpu_count = len(os.sched_getaffinity(0))
         if cpu_count and cpu_count > 0:
-            logger.debug(f"CPU count from os.cpu_count(): {cpu_count}")
+            logger.debug(f"CPU count from os.sched_getaffinity(0): {cpu_count}")
         else:
             cpu_count = None
-    except Exception as e:
-        logger.warning(f"Failed to get CPU count from os.cpu_count(): {e}")
+    except (AttributeError, NotImplementedError, OSError) as e:
+        # Not available on non-Linux platforms (e.g. macOS, Windows)
+        logger.debug(f"os.sched_getaffinity() unavailable: {e}")
         cpu_count = None
-    
-    # Method 2: psutil fallback
+
+    # Method 2: os.cpu_count() fallback
+    if cpu_count is None:
+        try:
+            cpu_count = os.cpu_count()
+            if cpu_count and cpu_count > 0:
+                logger.debug(f"CPU count from os.cpu_count(): {cpu_count}")
+            else:
+                cpu_count = None
+        except Exception as e:
+            logger.warning(f"Failed to get CPU count from os.cpu_count(): {e}")
+            cpu_count = None
+
+    # Method 3: psutil fallback
     if cpu_count is None:
         try:
             cpu_count = psutil.cpu_count(logical=True)
@@ -85,6 +104,45 @@ def get_optimal_threads(reserve: int = 2, default: int = 10, max_threads: Option
     
     logger.debug(f"Calculated optimal threads: {optimal} (CPU: {cpu_count}, reserve: {reserve})")
     return optimal
+
+def _get_cgroup_available_memory_mb() -> Optional[float]:
+    """
+    Get memory actually available under a cgroup limit (Docker --memory,
+    Kubernetes memory limits, SLURM --mem allocations), in MB.
+
+    psutil.virtual_memory() reads host-wide /proc/meminfo and has no notion
+    of cgroup memory limits, so inside a container/job restricted to less
+    memory than the host it silently over-reports what's usable. Returns
+    None if no cgroup limit is set (or cgroup files aren't readable), in
+    which case the host-wide psutil figures are the correct source.
+    """
+    # cgroup v2
+    try:
+        max_path = Path('/sys/fs/cgroup/memory.max')
+        current_path = Path('/sys/fs/cgroup/memory.current')
+        if max_path.is_file() and current_path.is_file():
+            raw_limit = max_path.read_text().strip()
+            if raw_limit != 'max':
+                limit_bytes = int(raw_limit)
+                current_bytes = int(current_path.read_text().strip())
+                return max(0.0, (limit_bytes - current_bytes) / (1024 * 1024))
+    except (OSError, ValueError) as e:
+        logger.debug(f"Could not read cgroup v2 memory limit: {e}")
+
+    # cgroup v1
+    try:
+        limit_path = Path('/sys/fs/cgroup/memory/memory.limit_in_bytes')
+        usage_path = Path('/sys/fs/cgroup/memory/memory.usage_in_bytes')
+        if limit_path.is_file() and usage_path.is_file():
+            limit_bytes = int(limit_path.read_text().strip())
+            # cgroup v1 uses a very large sentinel value for "no limit"
+            if limit_bytes < (1 << 62):
+                usage_bytes = int(usage_path.read_text().strip())
+                return max(0.0, (limit_bytes - usage_bytes) / (1024 * 1024))
+    except (OSError, ValueError) as e:
+        logger.debug(f"Could not read cgroup v1 memory limit: {e}")
+
+    return None
 
 def get_available_memory(
     fraction: float = 2/3, 
@@ -145,7 +203,15 @@ def get_available_memory(
         used_mb = memory_info.used / (1024 * 1024)
         
         logger.debug(f"System memory - Total: {total_mb:.0f}MB, Available: {available_mb:.0f}MB, Used: {used_mb:.0f}MB")
-        
+
+        # Cap by cgroup limit if this process is running under one (Docker
+        # --memory, Kubernetes limits, SLURM --mem) — psutil only sees the
+        # host-wide figures above.
+        cgroup_available_mb = _get_cgroup_available_memory_mb()
+        if cgroup_available_mb is not None and cgroup_available_mb < available_mb:
+            logger.debug(f"Capping available memory to cgroup limit: {cgroup_available_mb:.0f}MB (host-wide: {available_mb:.0f}MB)")
+            available_mb = cgroup_available_mb
+
         # Calculate usable memory after safety buffer
         usable_memory_mb = max(0, available_mb - safety_buffer_mb)
         
