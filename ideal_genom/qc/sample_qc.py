@@ -799,7 +799,7 @@ class SampleQC:
 
         return
     
-    def _analyze_ibd_failures(self, ibd_threshold: float, chunk_size: int = 100000) -> pd.DataFrame:
+    def _analyze_ibd_failures(self, ibd_threshold: float, chunk_size: int = 1_000_000) -> pd.DataFrame:
         """Helper method to analyze IBD failures in chunks.
         
         Parameters
@@ -818,7 +818,7 @@ class SampleQC:
         genome_path = self.results_dir / (self.output_name + '-ibd.genome')
 
         # Load missingness data
-        df_imiss = pd.read_csv(imiss_path, sep=r'\s+', engine='python')
+        df_imiss = pd.read_csv(imiss_path, sep=r'\s+')
         df_imiss.columns = [col.lstrip('#') for col in df_imiss.columns]
 
         # Process genome file in chunks
@@ -827,7 +827,6 @@ class SampleQC:
             genome_path,
             usecols=['FID1', 'IID1', 'FID2', 'IID2', 'PI_HAT'],
             sep=r'\s+',
-            engine='python',
             chunksize=chunk_size,
         ):
             filtered_chunk = chunk[chunk['PI_HAT'] > ibd_threshold]
@@ -894,7 +893,7 @@ class SampleQC:
             DataFrame with failed samples (FID, IID, Failure columns)
         """
         # Load heterozygosity data
-        df_het = pd.read_csv(het_file, sep=r'\s+', engine='python')
+        df_het = pd.read_csv(het_file, sep=r'\s+')
         df_het.columns = [col.lstrip('#') for col in df_het.columns]
         df_het["HET_RATE"] = 1 - (df_het["O(HOM)"] / df_het["OBS_CT"])
 
@@ -983,43 +982,18 @@ class SampleQC:
             if not file.exists():
                 raise FileNotFoundError(f"Required file not found: {file}")
             
-        # Load and filter call rate failures in chunks
-        fail_call_rate_chunks = []
-        for chunk in pd.read_csv(
-            self.call_rate_miss,
-            sep=r'\s+',
-            engine='python',
-            chunksize=10000
-        ):
-            chunk.columns = [col.lstrip('#') for col in chunk.columns]
-            failed_chunk = chunk[chunk['F_MISS'] > call_rate_thres][['FID', 'IID']].copy()
-            if not failed_chunk.empty:
-                fail_call_rate_chunks.append(failed_chunk)
-        
-        if fail_call_rate_chunks:
-            fail_call_rate = pd.concat(fail_call_rate_chunks, ignore_index=True)
-            fail_call_rate['Failure'] = 'Call rate'
-        else:
-            fail_call_rate = pd.DataFrame(columns=['FID', 'IID', 'Failure'])
+        # Load and filter call rate failures. One row per sample, so no
+        # need to chunk this the way the O(n_samples^2) IBD genome file is.
+        df_call_rate = pd.read_csv(self.call_rate_miss, sep=r'\s+')
+        df_call_rate.columns = [col.lstrip('#') for col in df_call_rate.columns]
+        fail_call_rate = df_call_rate[df_call_rate['F_MISS'] > call_rate_thres][['FID', 'IID']].copy()
+        fail_call_rate['Failure'] = 'Call rate'
 
-        # Load and filter sex check failures in chunks
-        fail_sexcheck_chunks = []
-        for chunk in pd.read_csv(
-            self.results_dir / (self.output_name + '-sexcheck.sexcheck'),
-            sep=r'\s+',
-            engine='python',
-            chunksize=10000
-        ):
-            chunk.columns = [col.lstrip('#') for col in chunk.columns]
-            failed_chunk = chunk[chunk['STATUS'] == 'PROBLEM'][['FID', 'IID']].copy()
-            if not failed_chunk.empty:
-                fail_sexcheck_chunks.append(failed_chunk)
-        
-        if fail_sexcheck_chunks:
-            fail_sexcheck = pd.concat(fail_sexcheck_chunks, ignore_index=True)
-            fail_sexcheck['Failure'] = 'Sex check'
-        else:
-            fail_sexcheck = pd.DataFrame(columns=['FID', 'IID', 'Failure'])
+        # Load and filter sex check failures. Also one row per sample.
+        df_sexcheck = pd.read_csv(self.results_dir / (self.output_name + '-sexcheck.sexcheck'), sep=r'\s+')
+        df_sexcheck.columns = [col.lstrip('#') for col in df_sexcheck.columns]
+        fail_sexcheck = df_sexcheck[df_sexcheck['STATUS'] == 'PROBLEM'][['FID', 'IID']].copy()
+        fail_sexcheck['Failure'] = 'Sex check'
 
         # Heterozygosity failures for MAF greater than threshold
         fail_het_greater = self._analyze_heterozygosity_failures(
@@ -1042,8 +1016,7 @@ class SampleQC:
             # Load kinship-based duplicates/related samples
             df_duplicates = pd.read_csv(
                 self.kinship_miss,
-                sep=r'\s+',
-                engine='python'
+                sep=r'\s+'
             )
             df_duplicates.columns = ['FID', 'IID']
             fail_duplicates = df_duplicates[['FID', 'IID']].copy()
