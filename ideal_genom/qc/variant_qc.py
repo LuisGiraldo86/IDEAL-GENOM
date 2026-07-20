@@ -376,8 +376,7 @@ class VariantQC:
         # load .vmiss file for male subjects
         df_males = pd.read_csv(
             filename_male,
-            sep=r"\s+",
-            engine='python'
+            sep=r"\s+"
         )
         
         ## filter male subjects
@@ -388,8 +387,7 @@ class VariantQC:
         # load .vmiss file for female subjects
         df_females = pd.read_csv(
             filename_female,
-            sep=r"\s+",
-            engine='python'
+            sep=r"\s+"
         )
         
         ## filter female subjects
@@ -429,8 +427,7 @@ class VariantQC:
         # load .missing file
         df_diffmiss = pd.read_csv(
             filename,
-            sep=r"\s+",
-            engine='python'
+            sep=r"\s+"
         )
 
         # filter markers with different genotype call rate
@@ -612,8 +609,7 @@ class VariantQCReport:
         # load .vmiss file for male subjects
         df_males = pd.read_csv(
             missing_data_rate_male,
-            sep=r"\s+",
-            engine='python'
+            sep=r"\s+"
         )
 
         self._make_histogram(
@@ -629,8 +625,7 @@ class VariantQCReport:
         # load .vmiss file for female subjects
         df_females = pd.read_csv(
             missing_data_rate_female,
-            sep=r"\s+",
-            engine='python'
+            sep=r"\s+"
         )
 
         self._make_histogram(
