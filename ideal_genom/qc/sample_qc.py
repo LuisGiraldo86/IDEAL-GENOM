@@ -403,8 +403,7 @@ class SampleQC:
         
         This method performs sex check analysis by:
         1. Running PLINK's --check-sex command on pruned data
-        2. Extracting X chromosome SNPs
-        3. Calculating missingness rates for X chromosome SNPs
+        2. Calculating missingness rates for X chromosome SNPs (filtered inline, no intermediate file)
         
         Parameters
         ----------
@@ -428,7 +427,6 @@ class SampleQC:
         -----
         The method creates the following output files:
         - {output_name}-sexcheck.sexcheck : Contains sex check results
-        - {output_name}-xchr.bed/bim/fam : X chromosome SNP data
         - {output_name}-xchr-missing.smiss : X chromosome missingness data
         
         The number of threads used is automatically determined based on available CPU cores,
@@ -458,19 +456,11 @@ class SampleQC:
         ])
         # time.sleep(2)
 
-        # Extract X chromosome SNPs
+        # X chromosome missingness, filtering to chr 23 in the same pass
+        # instead of materializing a separate -xchr bed/bim/fam first.
         run_plink2([
             '--bfile', str(self.pruned_file),
             '--chr', '23',
-            '--threads', str(max_threads),
-            '--make-bed',
-            '--out', str(self.results_dir / (self.output_name + '-xchr'))
-        ])
-        # time.sleep(2)
-
-        # Run missingness on X chromosome SNPs
-        run_plink2([
-            '--bfile', str(self.results_dir / (self.output_name + '-xchr')),
             '--threads', str(max_threads),
             '--missing',
             '--out', str(self.results_dir / (self.output_name + '-xchr-missing'))
