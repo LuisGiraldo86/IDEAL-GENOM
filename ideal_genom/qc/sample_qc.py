@@ -1410,8 +1410,7 @@ class SampleQCReport:
         # load call rate data
         df_call_rate = pd.read_csv(
             smiss_file,
-            sep=r'\s+',
-            engine='python'
+            sep=r'\s+'
         )
         df_call_rate.columns = [col.lstrip('#') for col in df_call_rate.columns]
 
@@ -1547,15 +1546,13 @@ class SampleQCReport:
 
         df_sexcheck = pd.read_csv(
             sex_check_filename,
-            sep   =r'\s+',
-            engine='python'
+            sep   =r'\s+'
         )
         df_sexcheck.columns = [col.lstrip('#') for col in df_sexcheck.columns]
 
         df_xchr_smiss = pd.read_csv(
             xchr_imiss_filename,
-            sep   =r'\s+',
-            engine='python'
+            sep   =r'\s+'
         )
         df_xchr_smiss.columns = [col.lstrip('#') for col in df_xchr_smiss.columns]
 
@@ -1694,8 +1691,7 @@ class SampleQCReport:
         # load samples that failed heterozygosity rate check with MAF > threshold
         df_het = pd.read_csv(
             het_filename,
-            sep   =r'\s+',
-            engine='python'
+            sep   =r'\s+'
         )
         df_het.columns = [col.lstrip('#') for col in df_het.columns]
         df_het["HET_RATE"] = 1 - (df_het["O(HOM)"] / df_het["OBS_CT"])
@@ -1704,8 +1700,7 @@ class SampleQCReport:
         # autosomal call rate per individual
         df_autosomal = pd.read_csv(
             autosomal_filename,
-            sep   =r'\s+',
-            engine='python'
+            sep   =r'\s+'
         )
         df_autosomal.columns = [col.lstrip('#') for col in df_autosomal.columns]
 
@@ -1806,7 +1801,7 @@ class SampleQCReport:
             The PI_HAT threshold for the reference line in the plot.
             Typical values: >0.98 for duplicates, >0.5 for first-degree relatives,
             >0.185 for second-degree relatives.
-        chunk_size : int, default=100000
+        chunk_size : int, default=1_000_000
             Number of rows to process at a time when reading the genome file.
         
         Returns
@@ -1846,7 +1841,6 @@ class SampleQCReport:
             genome,
             usecols  =['FID1', 'IID1', 'FID2', 'IID2', 'PI_HAT'],
             sep      =r'\s+',
-            engine   ='python',
             chunksize=chunk_size,
         ):
             # Filter rows with PI_HAT > 0.1 to visualize the full distribution of related samples
@@ -1869,7 +1863,6 @@ class SampleQCReport:
         ax.legend()
         plt.tight_layout()
         plt.savefig(self.output_path / 'ibd_pihat_distribution.png', dpi=600)
-        plt.show(block=False)
         plt.close()
        
         return 
