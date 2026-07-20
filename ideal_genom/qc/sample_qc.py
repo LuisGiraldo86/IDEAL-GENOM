@@ -280,8 +280,7 @@ class SampleQC:
         -----
         - Uses available CPU cores (leaving 2 cores free) and 2/3 of available memory
         - Creates intermediate and final files with suffixes:
-          * '-LDregionExcluded'
-          * '-LDregionExcluded-prunning'
+          * '-LDpruning' (prune.in/prune.out variant lists only, no bed/bim/fam)
           * '-LDpruned'
         - Updates self.pruned_file with path to final pruned dataset
         """
@@ -311,39 +310,32 @@ class SampleQC:
         else:
             ld_input = self.input_name
 
-        # Exclude complex regions
+        prune_in_file = (self.results_dir / (self.input_name + '-LDpruning')).with_suffix('.prune.in')
+
+        # Compute the LD-pruning variant list, excluding high-LD regions in
+        # the same pass instead of pre-materializing a filtered bed/bim/fam
+        # just to read it back in immediately after.
         run_plink2([
             '--bfile', str(self.input_path / ld_input),
             '--exclude', str(self.high_ld_regions_file),
-            '--memory', str(memory),
-            '--threads', str(max_threads),
-            '--make-bed',
-            '--out', str(self.results_dir / (self.input_name + '-LDregionExcluded'))
-        ])
-        # time.sleep(5)
-        
-        prune_in_file = (self.results_dir / (self.input_name+'-LDregionExcluded-prunning')).with_suffix('.prune.in')
-
-        # LD prune indep-pairwise test
-        run_plink2([
-            '--bfile', str(self.results_dir / (self.input_name + '-LDregionExcluded')),
             '--indep-pairwise', str(ind_pair[0]), str(ind_pair[1]), str(ind_pair[2]),
             '--memory', str(memory),
             '--threads', str(max_threads),
-            '--out', str(self.results_dir / (self.input_name + '-LDregionExcluded-prunning'))
+            '--out', str(self.results_dir / (self.input_name + '-LDpruning'))
         ])
-        # time.sleep(5)
 
-        # Extract pruned SNPs
+        # Extract the pruned SNPs directly from the original input. The
+        # high-LD exclusion must be re-applied here too, since prune_in_file
+        # only lists variants that already passed it in the step above.
         run_plink2([
-            '--bfile', str(self.results_dir / (self.input_name + '-LDregionExcluded')),
+            '--bfile', str(self.input_path / ld_input),
+            '--exclude', str(self.high_ld_regions_file),
             '--extract', str(prune_in_file),
             '--make-bed',
             '--out', str(self.results_dir / (self.input_name + '-LDpruned')),
             '--memory', str(memory),
             '--threads', str(max_threads)
         ])
-        # time.sleep(5)
 
         self.pruned_file = self.results_dir / (self.input_name + '-LDpruned')
 
