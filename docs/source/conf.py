@@ -45,21 +45,20 @@ autodoc_default_options = {
 
 autosummary_generate = True
 
-# Mock imports for modules that require heavy dependencies
+# Mock imports for modules not declared as project dependencies.
+# pandas/numpy/matplotlib/seaborn/scipy/umap/yaml/psutil are real
+# pyproject.toml dependencies (always present after `poetry install`) and
+# must NOT be mocked: sphinx's mock objects break mpl_toolkits.mplot3d's
+# class-body tuple unpacking, which the visualization modules trigger via
+# textalloc. pyarrow/Levenshtein aren't imported anywhere in ideal_genom/
+# either directly or transitively in a way that needs mocking -- mocking
+# pyarrow specifically breaks pandas' own internal optional-pyarrow
+# version check (pandas expects a genuine ImportError when pyarrow is
+# absent, not a mock object with a garbage __version__).
 autodoc_mock_imports = [
-    'pandas',
-    'numpy',
-    'matplotlib',
-    'seaborn',
-    'scipy',
-    'umap',
     'sklearn',
     'bs4',
-    'yaml',
-    'psutil',
     'tqdm',
-    'pyarrow',
-    'Levenshtein',
 ]
 
 # -- Napoleon configuration --------------------------------------------------
