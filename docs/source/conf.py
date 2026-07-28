@@ -15,8 +15,8 @@ import sphinx_rtd_theme
 project = 'IDEAL-GENOM'
 copyright = '2026, Luis Giraldo González, Amabel Tenghe'
 author = 'Luis Giraldo González, Amabel Tenghe'
-release = '1.1.0'
-version = '1.1.0'
+release = '1.2.0'
+version = '1.2.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
