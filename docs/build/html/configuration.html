@@ -6,16 +6,16 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Configuration Guide &mdash; IDEAL-GENOM v1.1.0</title>
+  <title>Configuration Guide &mdash; IDEAL-GENOM v1.2.0</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=fc837d61"></script>
-      <script src="_static/doctools.js?v=fd6eb6e6"></script>
-      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/documentation_options.js?v=6efca38a"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -315,7 +315,9 @@
 <li><p><strong>input_name</strong> (string): PLINK file prefix (e.g., “mydata” for mydata.bed)</p></li>
 <li><p><strong>output_path</strong> (string): Where to save QC results</p></li>
 <li><p><strong>output_name</strong> (string): Prefix for output files</p></li>
-<li><p><strong>high_ld_regions_file</strong> (string): Path to high-LD regions file, or “auto” to use built-in</p></li>
+<li><p><strong>high_ld_regions_file</strong> (string): Path to high-LD regions file, or any nonexistent path
+such as “auto” — there’s no literal sentinel check; a path that doesn’t resolve to a file
+simply triggers automatic download of the built-in regions for the given <code class="docutils literal notranslate"><span class="pre">build</span></code></p></li>
 <li><p><strong>build</strong> (string): Genome build version - “37” (GRCh37/hg19) or “38” (GRCh38/hg38)</p></li>
 </ul>
 <p><strong>execute_params:</strong></p>
@@ -512,8 +514,6 @@
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">settings</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">logging</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">level</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;INFO&quot;</span><span class="w">              </span><span class="c1"># Logging verbosity</span>
-<span class="w">    </span><span class="nt">file_logging</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">         </span><span class="c1"># Write to log file</span>
-<span class="w">    </span><span class="nt">console_logging</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">      </span><span class="c1"># Print to console</span>
 </pre></div>
 </div>
 <p><strong>level</strong> (string): Log message detail level</p>
@@ -523,35 +523,29 @@
 <li><p>“WARNING”: Only warnings and errors</p></li>
 <li><p>“ERROR”: Only errors</p></li>
 </ul>
-<p><strong>file_logging</strong> (bool): Save logs to <code class="docutils literal notranslate"><span class="pre">pipeline.log</span></code> in output directory</p>
-<p><strong>console_logging</strong> (bool): Print log messages to terminal</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">settings.logging.level</span></code> is the only logging setting actually read
+(by the <code class="docutils literal notranslate"><span class="pre">ideal-genom</span> <span class="pre">run</span></code> CLI command, which can also be overridden
+with <code class="docutils literal notranslate"><span class="pre">--log-level</span></code>). Keys like <code class="docutils literal notranslate"><span class="pre">file_logging</span></code> or
+<code class="docutils literal notranslate"><span class="pre">console_logging</span></code> are not implemented and have no effect if present
+in a config file.</p>
+</div>
 </section>
 <section id="resource-settings">
 <h3>Resource Settings<a class="headerlink" href="#resource-settings" title="Link to this heading"></a></h3>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">settings</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">max_memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span><span class="w">           </span><span class="c1"># Maximum memory in MB</span>
-<span class="w">    </span><span class="nt">max_threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span><span class="w">          </span><span class="c1"># Maximum CPU threads</span>
-</pre></div>
-</div>
-<p><strong>max_memory</strong> (int or null): Maximum memory allocation in MB</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">null</span></code>: Auto-detect (uses 2/3 of available RAM)</p></li>
-<li><p>Explicit value: Set specific limit (e.g., 32000 for 32GB)</p></li>
-</ul>
-<p><strong>max_threads</strong> (int or null): Maximum CPU threads to use</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">null</span></code>: Auto-detect (uses available cores - 2)</p></li>
-<li><p>Explicit value: Set specific number</p></li>
-</ul>
+<p>Thread and memory usage for PLINK/GCTA subprocess calls is always sized
+automatically from host resources (see <code class="docutils literal notranslate"><span class="pre">core/utils.py</span></code>’s
+<code class="docutils literal notranslate"><span class="pre">get_optimal_threads()</span></code>/<code class="docutils literal notranslate"><span class="pre">get_available_memory()</span></code>). There is currently
+no <code class="docutils literal notranslate"><span class="pre">settings.resources</span></code> key that overrides this — a <code class="docutils literal notranslate"><span class="pre">max_memory</span></code> or
+<code class="docutils literal notranslate"><span class="pre">max_threads</span></code> entry under <code class="docutils literal notranslate"><span class="pre">settings</span></code> is accepted by the YAML parser
+but silently ignored by the pipeline executor.</p>
 </section>
 <section id="file-management-settings">
 <h3>File Management Settings<a class="headerlink" href="#file-management-settings" title="Link to this heading"></a></h3>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">settings</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">files</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">keep_intermediate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">    </span><span class="c1"># Preserve temporary files</span>
-<span class="w">    </span><span class="nt">compress_outputs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">    </span><span class="c1"># Compress output files</span>
-<span class="w">    </span><span class="nt">overwrite_existing</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">  </span><span class="c1"># Overwrite existing results</span>
 </pre></div>
 </div>
 <p><strong>keep_intermediate</strong> (bool): Keep temporary intermediate files</p>
@@ -559,12 +553,13 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">true</span></code>: Keep all files (useful for debugging)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">false</span></code>: Clean up after each step (saves disk space)</p></li>
 </ul>
-<p><strong>compress_outputs</strong> (bool): Compress output files with gzip</p>
-<p><strong>overwrite_existing</strong> (bool): Overwrite existing output files</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">true</span></code>: Overwrite without asking</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">false</span></code>: Fail if outputs exist (safer)</p></li>
-</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">keep_intermediate</span></code> is the only key under <code class="docutils literal notranslate"><span class="pre">settings.files</span></code> that is
+actually consumed by <code class="docutils literal notranslate"><span class="pre">PipelineExecutor</span></code>. <code class="docutils literal notranslate"><span class="pre">compress_outputs</span></code> and
+<code class="docutils literal notranslate"><span class="pre">overwrite_existing</span></code> are not implemented and have no effect if
+present in a config file.</p>
+</div>
 </section>
 <section id="report-generation-settings">
 <h3>Report Generation Settings<a class="headerlink" href="#report-generation-settings" title="Link to this heading"></a></h3>

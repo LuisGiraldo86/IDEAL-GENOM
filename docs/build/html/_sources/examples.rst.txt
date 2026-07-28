@@ -34,10 +34,8 @@ This example demonstrates a standard quality control pipeline for a case-control
             input_name: "gwas_data"
             output_path: "${base_output_dir}/sample_qc"
             output_name: "sample_clean"
-            reference_path: "data/1000genomes_build_38"
-            reference_name: "1kG_phase3_GRCh38"
-            built: "38"
-            recompute: false
+            high_ld_regions_file: "auto"
+            build: "38"
           execute_params:
             rename_snp: true
             hh_to_missing: true
@@ -60,9 +58,8 @@ This example demonstrates a standard quality control pipeline for a case-control
             input_name: "${steps.sample_qc.output_name}"
             output_path: "${base_output_dir}/ancestry_qc"
             output_name: "ancestry_clean"
-            reference_path: "data/1000genomes_build_38"
-            reference_name: "1kG_phase3_GRCh38"
-            built: "38"
+            high_ld_regions_file: "auto"
+            build: "38"
           execute_params:
             ind_pair: [50, 5, 0.2]
             pca: 10
@@ -297,9 +294,8 @@ This example focuses on detailed population structure analysis with Fst statisti
             input_name: "qc_passed"
             output_path: "${base_output_dir}/ancestry"
             output_name: "ancestry_results"
-            reference_path: "data/1000genomes_build_38"
-            reference_name: "1kG_phase3_GRCh38"
-            built: "38"
+            high_ld_regions_file: "auto"
+            build: "38"
           execute_params:
             ind_pair: [50, 5, 0.2]
             pca: 20
@@ -363,9 +359,10 @@ Using IDEAL-GENOM Programmatically
         input_name="genotype_data",
         output_path=Path("/data/output/sample_qc"),
         output_name="sample_clean",
+        high_ld_regions_file=Path("/data/high_ld_regions.txt"),
         build="38"
     )
-    
+
     sample_qc.execute_sample_qc_pipeline({
         "rename_snp": True,
         "hh_to_missing": True,
@@ -375,16 +372,17 @@ Using IDEAL-GENOM Programmatically
         "sex_check": [0.2, 0.8],
         "maf": 0.01,
         "het_deviation": 3,
-        "kinship": 0.354
+        "kinship": 0.354,
+        "ibd_threshold": 0.185
     })
-    
+
     # Step 2: Ancestry QC
     ancestry_qc = AncestryQC(
         input_path=Path("/data/output/sample_qc"),
         input_name="sample_clean",
         output_path=Path("/data/output/ancestry_qc"),
         output_name="ancestry_clean",
-        reference_path=Path("data/1000genomes_build_38"),
+        high_ld_regions_file=Path("/data/high_ld_regions.txt"),
         build="38"
     )
     

@@ -13,8 +13,8 @@
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="../../../_static/documentation_options.js?v=fc837d61"></script>
-      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
-      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -381,8 +381,7 @@
 <span class="sd">        -----</span>
 <span class="sd">        - Uses available CPU cores (leaving 2 cores free) and 2/3 of available memory</span>
 <span class="sd">        - Creates intermediate and final files with suffixes:</span>
-<span class="sd">          * &#39;-LDregionExcluded&#39;</span>
-<span class="sd">          * &#39;-LDregionExcluded-prunning&#39;</span>
+<span class="sd">          * &#39;-LDpruning&#39; (prune.in/prune.out variant lists only, no bed/bim/fam)</span>
 <span class="sd">          * &#39;-LDpruned&#39;</span>
 <span class="sd">        - Updates self.pruned_file with path to final pruned dataset</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -412,39 +411,32 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">ld_input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_name</span>
 
-        <span class="c1"># Exclude complex regions</span>
+        <span class="n">prune_in_file</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span> <span class="o">+</span> <span class="s1">&#39;-LDpruning&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">with_suffix</span><span class="p">(</span><span class="s1">&#39;.prune.in&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Compute the LD-pruning variant list, excluding high-LD regions in</span>
+        <span class="c1"># the same pass instead of pre-materializing a filtered bed/bim/fam</span>
+        <span class="c1"># just to read it back in immediately after.</span>
         <span class="n">run_plink2</span><span class="p">([</span>
             <span class="s1">&#39;--bfile&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_path</span> <span class="o">/</span> <span class="n">ld_input</span><span class="p">),</span>
             <span class="s1">&#39;--exclude&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">high_ld_regions_file</span><span class="p">),</span>
-            <span class="s1">&#39;--memory&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory</span><span class="p">),</span>
-            <span class="s1">&#39;--threads&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">max_threads</span><span class="p">),</span>
-            <span class="s1">&#39;--make-bed&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;--out&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span> <span class="o">+</span> <span class="s1">&#39;-LDregionExcluded&#39;</span><span class="p">))</span>
-        <span class="p">])</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
-        
-        <span class="n">prune_in_file</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span><span class="o">+</span><span class="s1">&#39;-LDregionExcluded-prunning&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">with_suffix</span><span class="p">(</span><span class="s1">&#39;.prune.in&#39;</span><span class="p">)</span>
-
-        <span class="c1"># LD prune indep-pairwise test</span>
-        <span class="n">run_plink2</span><span class="p">([</span>
-            <span class="s1">&#39;--bfile&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span> <span class="o">+</span> <span class="s1">&#39;-LDregionExcluded&#39;</span><span class="p">)),</span>
             <span class="s1">&#39;--indep-pairwise&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">ind_pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">str</span><span class="p">(</span><span class="n">ind_pair</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">str</span><span class="p">(</span><span class="n">ind_pair</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
             <span class="s1">&#39;--memory&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory</span><span class="p">),</span>
             <span class="s1">&#39;--threads&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">max_threads</span><span class="p">),</span>
-            <span class="s1">&#39;--out&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span> <span class="o">+</span> <span class="s1">&#39;-LDregionExcluded-prunning&#39;</span><span class="p">))</span>
+            <span class="s1">&#39;--out&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span> <span class="o">+</span> <span class="s1">&#39;-LDpruning&#39;</span><span class="p">))</span>
         <span class="p">])</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
 
-        <span class="c1"># Extract pruned SNPs</span>
+        <span class="c1"># Extract the pruned SNPs directly from the original input. The</span>
+        <span class="c1"># high-LD exclusion must be re-applied here too, since prune_in_file</span>
+        <span class="c1"># only lists variants that already passed it in the step above.</span>
         <span class="n">run_plink2</span><span class="p">([</span>
-            <span class="s1">&#39;--bfile&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span> <span class="o">+</span> <span class="s1">&#39;-LDregionExcluded&#39;</span><span class="p">)),</span>
+            <span class="s1">&#39;--bfile&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_path</span> <span class="o">/</span> <span class="n">ld_input</span><span class="p">),</span>
+            <span class="s1">&#39;--exclude&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">high_ld_regions_file</span><span class="p">),</span>
             <span class="s1">&#39;--extract&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">prune_in_file</span><span class="p">),</span>
             <span class="s1">&#39;--make-bed&#39;</span><span class="p">,</span>
             <span class="s1">&#39;--out&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span> <span class="o">+</span> <span class="s1">&#39;-LDpruned&#39;</span><span class="p">)),</span>
             <span class="s1">&#39;--memory&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory</span><span class="p">),</span>
             <span class="s1">&#39;--threads&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">max_threads</span><span class="p">)</span>
         <span class="p">])</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">pruned_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_name</span> <span class="o">+</span> <span class="s1">&#39;-LDpruned&#39;</span><span class="p">)</span>
 
@@ -484,12 +476,17 @@
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;STEP: Missing genotype check.&quot;</span><span class="p">)</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_files</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">missingness_input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">processed_files</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">missingness_input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_name</span>
+
         <span class="n">max_threads</span> <span class="o">=</span> <span class="n">get_optimal_threads</span><span class="p">()</span>
         <span class="n">memory</span> <span class="o">=</span> <span class="n">get_available_memory</span><span class="p">()</span>
 
         <span class="c1"># PLINK2 command: run missingness across file genome-wide</span>
         <span class="n">run_plink2</span><span class="p">([</span>
-            <span class="s1">&#39;--bfile&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pruned_file</span><span class="p">),</span>
+            <span class="s1">&#39;--bfile&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_path</span> <span class="o">/</span> <span class="n">missingness_input</span><span class="p">),</span>
             <span class="s1">&#39;--missing&#39;</span><span class="p">,</span>
             <span class="s1">&#39;--memory&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory</span><span class="p">),</span>
             <span class="s1">&#39;--threads&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">max_threads</span><span class="p">),</span>
@@ -513,8 +510,7 @@
 <span class="sd">        </span>
 <span class="sd">        This method performs sex check analysis by:</span>
 <span class="sd">        1. Running PLINK&#39;s --check-sex command on pruned data</span>
-<span class="sd">        2. Extracting X chromosome SNPs</span>
-<span class="sd">        3. Calculating missingness rates for X chromosome SNPs</span>
+<span class="sd">        2. Calculating missingness rates for X chromosome SNPs (filtered inline, no intermediate file)</span>
 <span class="sd">        </span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -538,7 +534,6 @@
 <span class="sd">        -----</span>
 <span class="sd">        The method creates the following output files:</span>
 <span class="sd">        - {output_name}-sexcheck.sexcheck : Contains sex check results</span>
-<span class="sd">        - {output_name}-xchr.bed/bim/fam : X chromosome SNP data</span>
 <span class="sd">        - {output_name}-xchr-missing.smiss : X chromosome missingness data</span>
 <span class="sd">        </span>
 <span class="sd">        The number of threads used is automatically determined based on available CPU cores,</span>
@@ -566,26 +561,18 @@
             <span class="s1">&#39;--memory&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory</span><span class="p">),</span>
             <span class="s1">&#39;--out&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_name</span> <span class="o">+</span> <span class="s1">&#39;-sexcheck&#39;</span><span class="p">))</span>
         <span class="p">])</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># time.sleep(2)</span>
 
-        <span class="c1"># Extract X chromosome SNPs</span>
+        <span class="c1"># X chromosome missingness, filtering to chr 23 in the same pass</span>
+        <span class="c1"># instead of materializing a separate -xchr bed/bim/fam first.</span>
         <span class="n">run_plink2</span><span class="p">([</span>
             <span class="s1">&#39;--bfile&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pruned_file</span><span class="p">),</span>
             <span class="s1">&#39;--chr&#39;</span><span class="p">,</span> <span class="s1">&#39;23&#39;</span><span class="p">,</span>
             <span class="s1">&#39;--threads&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">max_threads</span><span class="p">),</span>
-            <span class="s1">&#39;--make-bed&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;--out&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_name</span> <span class="o">+</span> <span class="s1">&#39;-xchr&#39;</span><span class="p">))</span>
-        <span class="p">])</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-
-        <span class="c1"># Run missingness on X chromosome SNPs</span>
-        <span class="n">run_plink2</span><span class="p">([</span>
-            <span class="s1">&#39;--bfile&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_name</span> <span class="o">+</span> <span class="s1">&#39;-xchr&#39;</span><span class="p">)),</span>
-            <span class="s1">&#39;--threads&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">max_threads</span><span class="p">),</span>
             <span class="s1">&#39;--missing&#39;</span><span class="p">,</span>
             <span class="s1">&#39;--out&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_name</span> <span class="o">+</span> <span class="s1">&#39;-xchr-missing&#39;</span><span class="p">))</span>
         <span class="p">])</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># time.sleep(2)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">sexcheck_miss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_name</span> <span class="o">+</span> <span class="s1">&#39;-sexcheck.sexcheck&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">xchr_miss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_name</span> <span class="o">+</span> <span class="s1">&#39;-xchr-missing.smiss&#39;</span><span class="p">)</span>
@@ -655,7 +642,7 @@
             <span class="s1">&#39;--make-bed&#39;</span><span class="p">,</span>
             <span class="s1">&#39;--out&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_name</span> <span class="o">+</span> <span class="s1">&#39;-chr1-22&#39;</span><span class="p">))</span>
         <span class="p">])</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+        <span class="c1"># time.sleep(5)</span>
 
         <span class="c1"># Extract SNPs with MAF greater than threshold</span>
         <span class="n">run_plink2</span><span class="p">([</span>
@@ -666,7 +653,7 @@
             <span class="s1">&#39;--memory&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory</span><span class="p">),</span>
             <span class="s1">&#39;--threads&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">max_threads</span><span class="p">)</span>
         <span class="p">])</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># time.sleep(2)</span>
 
         <span class="c1"># Extract SNPs with MAF less than threshold</span>
         <span class="n">run_plink2</span><span class="p">([</span>
@@ -677,7 +664,7 @@
             <span class="s1">&#39;--memory&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory</span><span class="p">),</span>
             <span class="s1">&#39;--threads&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">max_threads</span><span class="p">)</span>
         <span class="p">])</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># time.sleep(2)</span>
 
         <span class="c1"># Get missingness for MAF greater group</span>
         <span class="n">run_plink2</span><span class="p">([</span>
@@ -687,7 +674,7 @@
             <span class="s1">&#39;--memory&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory</span><span class="p">),</span>
             <span class="s1">&#39;--threads&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">max_threads</span><span class="p">)</span>
         <span class="p">])</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># time.sleep(2)</span>
 
         <span class="c1"># Get missingness for MAF less group</span>
         <span class="n">run_plink2</span><span class="p">([</span>
@@ -697,7 +684,7 @@
             <span class="s1">&#39;--memory&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory</span><span class="p">),</span>
             <span class="s1">&#39;--threads&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">max_threads</span><span class="p">)</span>
         <span class="p">])</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># time.sleep(2)</span>
 
         <span class="c1"># Compute heterozygosity for MAF greater group</span>
         <span class="n">run_plink2</span><span class="p">([</span>
@@ -707,7 +694,7 @@
             <span class="s1">&#39;--memory&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory</span><span class="p">),</span>
             <span class="s1">&#39;--threads&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">max_threads</span><span class="p">)</span>
         <span class="p">])</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># time.sleep(2)</span>
 
         <span class="c1"># Compute heterozygosity for MAF less group</span>
         <span class="n">run_plink2</span><span class="p">([</span>
@@ -717,7 +704,7 @@
             <span class="s1">&#39;--memory&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">memory</span><span class="p">),</span>
             <span class="s1">&#39;--threads&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">max_threads</span><span class="p">)</span>
         <span class="p">])</span>
-        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># time.sleep(2)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">maf_greater_het</span><span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_name</span><span class="o">+</span><span class="s1">&#39;-chr1-22-mafgreater.het&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">maf_greater_het</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
@@ -932,7 +919,7 @@
         <span class="k">return</span></div>
 
     
-    <span class="k">def</span><span class="w"> </span><span class="nf">_analyze_ibd_failures</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ibd_threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100000</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_analyze_ibd_failures</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ibd_threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1_000_000</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper method to analyze IBD failures in chunks.</span>
 <span class="sd">        </span>
 <span class="sd">        Parameters</span>
@@ -951,7 +938,7 @@
         <span class="n">genome_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_name</span> <span class="o">+</span> <span class="s1">&#39;-ibd.genome&#39;</span><span class="p">)</span>
 
         <span class="c1"># Load missingness data</span>
-        <span class="n">df_imiss</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">imiss_path</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span><span class="p">)</span>
+        <span class="n">df_imiss</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">imiss_path</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">)</span>
         <span class="n">df_imiss</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df_imiss</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
 
         <span class="c1"># Process genome file in chunks</span>
@@ -960,7 +947,6 @@
             <span class="n">genome_path</span><span class="p">,</span>
             <span class="n">usecols</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;FID1&#39;</span><span class="p">,</span> <span class="s1">&#39;IID1&#39;</span><span class="p">,</span> <span class="s1">&#39;FID2&#39;</span><span class="p">,</span> <span class="s1">&#39;IID2&#39;</span><span class="p">,</span> <span class="s1">&#39;PI_HAT&#39;</span><span class="p">],</span>
             <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span>
-            <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span><span class="p">,</span>
             <span class="n">chunksize</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="n">filtered_chunk</span> <span class="o">=</span> <span class="n">chunk</span><span class="p">[</span><span class="n">chunk</span><span class="p">[</span><span class="s1">&#39;PI_HAT&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">ibd_threshold</span><span class="p">]</span>
@@ -1027,7 +1013,7 @@
 <span class="sd">            DataFrame with failed samples (FID, IID, Failure columns)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Load heterozygosity data</span>
-        <span class="n">df_het</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">het_file</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span><span class="p">)</span>
+        <span class="n">df_het</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">het_file</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">)</span>
         <span class="n">df_het</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df_het</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
         <span class="n">df_het</span><span class="p">[</span><span class="s2">&quot;HET_RATE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">df_het</span><span class="p">[</span><span class="s2">&quot;O(HOM)&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">df_het</span><span class="p">[</span><span class="s2">&quot;OBS_CT&quot;</span><span class="p">])</span>
 
@@ -1118,43 +1104,18 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
                 <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Required file not found: </span><span class="si">{</span><span class="n">file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             
-        <span class="c1"># Load and filter call rate failures in chunks</span>
-        <span class="n">fail_call_rate_chunks</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">call_rate_miss</span><span class="p">,</span>
-            <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span>
-            <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span><span class="p">,</span>
-            <span class="n">chunksize</span><span class="o">=</span><span class="mi">10000</span>
-        <span class="p">):</span>
-            <span class="n">chunk</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">chunk</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
-            <span class="n">failed_chunk</span> <span class="o">=</span> <span class="n">chunk</span><span class="p">[</span><span class="n">chunk</span><span class="p">[</span><span class="s1">&#39;F_MISS&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">call_rate_thres</span><span class="p">][[</span><span class="s1">&#39;FID&#39;</span><span class="p">,</span> <span class="s1">&#39;IID&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">failed_chunk</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
-                <span class="n">fail_call_rate_chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">failed_chunk</span><span class="p">)</span>
-        
-        <span class="k">if</span> <span class="n">fail_call_rate_chunks</span><span class="p">:</span>
-            <span class="n">fail_call_rate</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">fail_call_rate_chunks</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="n">fail_call_rate</span><span class="p">[</span><span class="s1">&#39;Failure&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Call rate&#39;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">fail_call_rate</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;FID&#39;</span><span class="p">,</span> <span class="s1">&#39;IID&#39;</span><span class="p">,</span> <span class="s1">&#39;Failure&#39;</span><span class="p">])</span>
+        <span class="c1"># Load and filter call rate failures. One row per sample, so no</span>
+        <span class="c1"># need to chunk this the way the O(n_samples^2) IBD genome file is.</span>
+        <span class="n">df_call_rate</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">call_rate_miss</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">)</span>
+        <span class="n">df_call_rate</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df_call_rate</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+        <span class="n">fail_call_rate</span> <span class="o">=</span> <span class="n">df_call_rate</span><span class="p">[</span><span class="n">df_call_rate</span><span class="p">[</span><span class="s1">&#39;F_MISS&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">call_rate_thres</span><span class="p">][[</span><span class="s1">&#39;FID&#39;</span><span class="p">,</span> <span class="s1">&#39;IID&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">fail_call_rate</span><span class="p">[</span><span class="s1">&#39;Failure&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Call rate&#39;</span>
 
-        <span class="c1"># Load and filter sex check failures in chunks</span>
-        <span class="n">fail_sexcheck_chunks</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_name</span> <span class="o">+</span> <span class="s1">&#39;-sexcheck.sexcheck&#39;</span><span class="p">),</span>
-            <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span>
-            <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span><span class="p">,</span>
-            <span class="n">chunksize</span><span class="o">=</span><span class="mi">10000</span>
-        <span class="p">):</span>
-            <span class="n">chunk</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">chunk</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
-            <span class="n">failed_chunk</span> <span class="o">=</span> <span class="n">chunk</span><span class="p">[</span><span class="n">chunk</span><span class="p">[</span><span class="s1">&#39;STATUS&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;PROBLEM&#39;</span><span class="p">][[</span><span class="s1">&#39;FID&#39;</span><span class="p">,</span> <span class="s1">&#39;IID&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">failed_chunk</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
-                <span class="n">fail_sexcheck_chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">failed_chunk</span><span class="p">)</span>
-        
-        <span class="k">if</span> <span class="n">fail_sexcheck_chunks</span><span class="p">:</span>
-            <span class="n">fail_sexcheck</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">fail_sexcheck_chunks</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="n">fail_sexcheck</span><span class="p">[</span><span class="s1">&#39;Failure&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Sex check&#39;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">fail_sexcheck</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;FID&#39;</span><span class="p">,</span> <span class="s1">&#39;IID&#39;</span><span class="p">,</span> <span class="s1">&#39;Failure&#39;</span><span class="p">])</span>
+        <span class="c1"># Load and filter sex check failures. Also one row per sample.</span>
+        <span class="n">df_sexcheck</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results_dir</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_name</span> <span class="o">+</span> <span class="s1">&#39;-sexcheck.sexcheck&#39;</span><span class="p">),</span> <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">)</span>
+        <span class="n">df_sexcheck</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df_sexcheck</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+        <span class="n">fail_sexcheck</span> <span class="o">=</span> <span class="n">df_sexcheck</span><span class="p">[</span><span class="n">df_sexcheck</span><span class="p">[</span><span class="s1">&#39;STATUS&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;PROBLEM&#39;</span><span class="p">][[</span><span class="s1">&#39;FID&#39;</span><span class="p">,</span> <span class="s1">&#39;IID&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">fail_sexcheck</span><span class="p">[</span><span class="s1">&#39;Failure&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Sex check&#39;</span>
 
         <span class="c1"># Heterozygosity failures for MAF greater than threshold</span>
         <span class="n">fail_het_greater</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_heterozygosity_failures</span><span class="p">(</span>
@@ -1177,8 +1138,7 @@
             <span class="c1"># Load kinship-based duplicates/related samples</span>
             <span class="n">df_duplicates</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">kinship_miss</span><span class="p">,</span>
-                <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span>
-                <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span>
+                <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span>
             <span class="p">)</span>
             <span class="n">df_duplicates</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;FID&#39;</span><span class="p">,</span> <span class="s1">&#39;IID&#39;</span><span class="p">]</span>
             <span class="n">fail_duplicates</span> <span class="o">=</span> <span class="n">df_duplicates</span><span class="p">[[</span><span class="s1">&#39;FID&#39;</span><span class="p">,</span> <span class="s1">&#39;IID&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -1351,7 +1311,7 @@
                 <span class="k">raise</span>
 
             <span class="c1"># Memory management</span>
-            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>  <span class="c1"># to avoid overwhelming the system with too many operations at once</span>
+            <span class="c1"># time.sleep(3)  # to avoid overwhelming the system with too many operations at once</span>
             <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>  <span class="c1"># clear memory after each step</span>
 
             <span class="n">mem</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">virtual_memory</span><span class="p">()</span>
@@ -1590,8 +1550,7 @@
         <span class="c1"># load call rate data</span>
         <span class="n">df_call_rate</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
             <span class="n">smiss_file</span><span class="p">,</span>
-            <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span>
-            <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span>
+            <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span>
         <span class="p">)</span>
         <span class="n">df_call_rate</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df_call_rate</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
 
@@ -1616,7 +1575,6 @@
 
         <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plots_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;call_rate_</span><span class="si">{</span><span class="n">threshold</span><span class="si">}</span><span class="s2">_histogram.</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
         <span class="n">fig2</span><span class="p">,</span> <span class="n">axes2</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -1633,7 +1591,7 @@
         <span class="c1"># Second subplot: Number of samples vs F_MISS</span>
         <span class="n">df_call_rate_sorted</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
             <span class="s1">&#39;Index&#39;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df_call_rate</span><span class="p">[</span><span class="s1">&#39;F_MISS&#39;</span><span class="p">])),</span>
-            <span class="s1">&#39;F_MISS&#39;</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">df_call_rate</span><span class="p">[</span><span class="s1">&#39;F_MISS&#39;</span><span class="p">])</span>
+            <span class="s1">&#39;F_MISS&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">df_call_rate</span><span class="p">[</span><span class="s1">&#39;F_MISS&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
         <span class="p">})</span>
 
         <span class="n">axes2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span>
@@ -1671,7 +1629,6 @@
 
         <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plots_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;call_rate_</span><span class="si">{</span><span class="n">threshold</span><span class="si">}</span><span class="s2">_scatterplot.</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
         <span class="k">return</span></div>
@@ -1730,15 +1687,13 @@
 
         <span class="n">df_sexcheck</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
             <span class="n">sex_check_filename</span><span class="p">,</span>
-            <span class="n">sep</span>   <span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span>
-            <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span>
+            <span class="n">sep</span>   <span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span>
         <span class="p">)</span>
         <span class="n">df_sexcheck</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df_sexcheck</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
 
         <span class="n">df_xchr_smiss</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
             <span class="n">xchr_imiss_filename</span><span class="p">,</span>
-            <span class="n">sep</span>   <span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span>
-            <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span>
+            <span class="n">sep</span>   <span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span>
         <span class="p">)</span>
         <span class="n">df_xchr_smiss</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df_xchr_smiss</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
 
@@ -1804,7 +1759,6 @@
         
         <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plots_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s1">&#39;sex_check.</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
         <span class="k">return</span></div>
@@ -1880,8 +1834,7 @@
         <span class="c1"># load samples that failed heterozygosity rate check with MAF &gt; threshold</span>
         <span class="n">df_het</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
             <span class="n">het_filename</span><span class="p">,</span>
-            <span class="n">sep</span>   <span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span>
-            <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span>
+            <span class="n">sep</span>   <span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span>
         <span class="p">)</span>
         <span class="n">df_het</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df_het</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
         <span class="n">df_het</span><span class="p">[</span><span class="s2">&quot;HET_RATE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">df_het</span><span class="p">[</span><span class="s2">&quot;O(HOM)&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">df_het</span><span class="p">[</span><span class="s2">&quot;OBS_CT&quot;</span><span class="p">])</span>
@@ -1890,8 +1843,7 @@
         <span class="c1"># autosomal call rate per individual</span>
         <span class="n">df_autosomal</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
             <span class="n">autosomal_filename</span><span class="p">,</span>
-            <span class="n">sep</span>   <span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span>
-            <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span>
+            <span class="n">sep</span>   <span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span>
         <span class="p">)</span>
         <span class="n">df_autosomal</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df_autosomal</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
 
@@ -1938,7 +1890,6 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plots_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;heterozygosity_rate_less_</span><span class="si">{</span><span class="n">maf</span><span class="si">}</span><span class="s2">_histogram.</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
         
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
         <span class="n">df_het</span><span class="p">[</span><span class="s1">&#39;Deviated&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Not Excluded&#39;</span>
@@ -1972,7 +1923,6 @@
             <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plots_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;heterozygosity_rate_greater_</span><span class="si">{</span><span class="n">maf</span><span class="si">}</span><span class="s2">_scatterplot.</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plots_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;heterozygosity_rate_less_</span><span class="si">{</span><span class="n">maf</span><span class="si">}</span><span class="s2">_scatterplot.</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
         <span class="k">return</span></div>
@@ -1980,7 +1930,7 @@
 
 <div class="viewcode-block" id="SampleQCReport.report_ibd_analysis">
 <a class="viewcode-back" href="../../../SampleQC.html#ideal_genom.qc.sample_qc.SampleQCReport.report_ibd_analysis">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">report_ibd_analysis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">genome</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">ibd_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.185</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100000</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">report_ibd_analysis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">genome</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">ibd_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.185</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1_000_000</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate visualization of IBD (Identity By Descent) analysis results.</span>
 <span class="sd">        </span>
 <span class="sd">        This method processes IBD analysis results and creates a histogram showing the</span>
@@ -1995,7 +1945,7 @@
 <span class="sd">            The PI_HAT threshold for the reference line in the plot.</span>
 <span class="sd">            Typical values: &gt;0.98 for duplicates, &gt;0.5 for first-degree relatives,</span>
 <span class="sd">            &gt;0.185 for second-degree relatives.</span>
-<span class="sd">        chunk_size : int, default=100000</span>
+<span class="sd">        chunk_size : int, default=1_000_000</span>
 <span class="sd">            Number of rows to process at a time when reading the genome file.</span>
 <span class="sd">        </span>
 <span class="sd">        Returns</span>
@@ -2035,7 +1985,6 @@
             <span class="n">genome</span><span class="p">,</span>
             <span class="n">usecols</span>  <span class="o">=</span><span class="p">[</span><span class="s1">&#39;FID1&#39;</span><span class="p">,</span> <span class="s1">&#39;IID1&#39;</span><span class="p">,</span> <span class="s1">&#39;FID2&#39;</span><span class="p">,</span> <span class="s1">&#39;IID2&#39;</span><span class="p">,</span> <span class="s1">&#39;PI_HAT&#39;</span><span class="p">],</span>
             <span class="n">sep</span>      <span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span>
-            <span class="n">engine</span>   <span class="o">=</span><span class="s1">&#39;python&#39;</span><span class="p">,</span>
             <span class="n">chunksize</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="c1"># Filter rows with PI_HAT &gt; 0.1 to visualize the full distribution of related samples</span>
@@ -2058,7 +2007,6 @@
         <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span> <span class="o">/</span> <span class="s1">&#39;ibd_pihat_distribution.png&#39;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
        
         <span class="k">return</span> </div>

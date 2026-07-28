@@ -6,16 +6,16 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API Overview &mdash; IDEAL-GENOM v1.1.0</title>
+  <title>API Overview &mdash; IDEAL-GENOM v1.2.0</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=fc837d61"></script>
-      <script src="_static/doctools.js?v=fd6eb6e6"></script>
-      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/documentation_options.js?v=6efca38a"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -178,10 +178,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">ideal_genom.population.projection</span><span class="w"> </span><span class="kn">import</span> <span class="n">DimensionalityReductionPipeline</span>
 
 <span class="c1"># Visualization modules</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">ideal_genom.visualizations.manhattan_type</span><span class="w"> </span><span class="kn">import</span> <span class="n">manhattan</span><span class="p">,</span> <span class="n">miami</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">ideal_genom.visualizations.plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">qqplot_draw</span><span class="p">,</span> <span class="n">beta_beta_plot</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">ideal_genom.visualizations.plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">trumpet_plot_binary</span><span class="p">,</span> <span class="n">trumpet_plot_quantitative</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">ideal_genom.visualizations.zoom_heatmap</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_zoom_heatmap</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ideal_genom.visualizations.manhattan_type</span><span class="w"> </span><span class="kn">import</span> <span class="n">manhattan_draw</span><span class="p">,</span> <span class="n">miami_draw</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ideal_genom.visualizations.plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">qqplot_draw</span><span class="p">,</span> <span class="n">beta_beta_draw</span><span class="p">,</span> <span class="n">trumpet_draw</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ideal_genom.visualizations.zoom_heatmap</span><span class="w"> </span><span class="kn">import</span> <span class="n">draw_zoomed_heatmap</span>
 
 <span class="c1"># Core framework</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">ideal_genom.core.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
@@ -201,20 +200,23 @@
     <span class="n">input_name</span><span class="o">=</span><span class="s2">&quot;study_data&quot;</span><span class="p">,</span>
     <span class="n">output_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;data/output&quot;</span><span class="p">),</span>
     <span class="n">output_name</span><span class="o">=</span><span class="s2">&quot;qc_clean&quot;</span><span class="p">,</span>
-    <span class="n">reference_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;data/1000genomes_build_38&quot;</span><span class="p">),</span>
-    <span class="n">reference_name</span><span class="o">=</span><span class="s2">&quot;1kG_phase3_GRCh38&quot;</span><span class="p">,</span>
-    <span class="n">built</span><span class="o">=</span><span class="s2">&quot;38&quot;</span>
+    <span class="n">high_ld_regions_file</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;data/high_ld_regions.txt&quot;</span><span class="p">),</span>
+    <span class="n">build</span><span class="o">=</span><span class="s2">&quot;38&quot;</span>
 <span class="p">)</span>
 
 <span class="c1"># 2. Execute the analysis with parameters</span>
-<span class="n">qc</span><span class="o">.</span><span class="n">run_sample_qc</span><span class="p">(</span>
-    <span class="n">rename_snp</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">mind</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-    <span class="n">maf</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
-    <span class="n">het_deviation</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-    <span class="n">use_kinship</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">kinship</span><span class="o">=</span><span class="mf">0.354</span>
-<span class="p">)</span>
+<span class="n">qc</span><span class="o">.</span><span class="n">execute_sample_qc_pipeline</span><span class="p">(</span><span class="n">sample_params</span><span class="o">=</span><span class="p">{</span>
+    <span class="s2">&quot;rename_snp&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s2">&quot;hh_to_missing&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s2">&quot;ind_pair&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">],</span>
+    <span class="s2">&quot;mind&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+    <span class="s2">&quot;sex_check&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">],</span>
+    <span class="s2">&quot;maf&quot;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+    <span class="s2">&quot;het_deviation&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s2">&quot;use_kinship&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s2">&quot;kinship&quot;</span><span class="p">:</span> <span class="mf">0.354</span><span class="p">,</span>
+    <span class="s2">&quot;ibd_threshold&quot;</span><span class="p">:</span> <span class="mf">0.185</span>
+<span class="p">})</span>
 
 <span class="c1"># 3. Access results</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output files at: </span><span class="si">{</span><span class="n">qc</span><span class="o">.</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -227,7 +229,7 @@
 <p><strong>Python API (Direct Usage):</strong></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Instantiate and run directly</span>
 <span class="n">sample_qc</span> <span class="o">=</span> <span class="n">SampleQC</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="n">sample_qc</span><span class="o">.</span><span class="n">run_sample_qc</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">sample_qc</span><span class="o">.</span><span class="n">execute_sample_qc_pipeline</span><span class="p">(</span><span class="n">sample_params</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">})</span>
 </pre></div>
 </div>
 <p><strong>YAML Pipeline (Declarative Configuration):</strong></p>

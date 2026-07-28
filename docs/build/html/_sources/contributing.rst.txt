@@ -305,16 +305,18 @@ Documentation Style
     
     .. code-block:: python
     
-        from ideal_genom_qc import SampleQC
-        
+        from pathlib import Path
+        from ideal_genom.qc.sample_qc import SampleQC
+
         qc = SampleQC(
-            input_path="data/input",
+            input_path=Path("data/input"),
             input_name="mydata",
-            output_path="data/output",
-            output_name="clean_data"
+            output_path=Path("data/output"),
+            output_name="clean_data",
+            high_ld_regions_file=Path("data/high_ld_regions.txt")
         )
-        
-        qc.run_sample_qc()
+
+        qc.execute_sample_qc_pipeline(sample_params={...})
 
 Git Workflow
 ------------

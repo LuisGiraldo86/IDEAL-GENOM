@@ -3,8 +3,27 @@ Changelog
 
 All notable changes to IDEAL-GENOM will be documented in this file.
 
-Version 1.1.0 (Current)
+Version 1.2.0 (Current)
 -----------------------
+
+**Released:** July 2026
+
+**Documentation:**
+
+- Realigned the Sphinx docs with the actual codebase: fixed broken ``SampleQC``/``AncestryQC`` usage examples in ``api_overview.rst``, ``contributing.rst`` and ``examples.rst`` that referenced nonexistent constructor parameters and a nonexistent ``run_sample_qc()`` method
+- Corrected ``configuration.rst`` to stop documenting ``settings.logging``/``settings.resources``/``settings.files`` keys that are accepted but silently ignored by the pipeline executor
+- Rewrote ``visualization_modules.rst`` (manhattan_type, plots, zoom_heatmap) to use live ``automodule`` directives instead of hand-maintained function signatures that had drifted from the real code; usage examples rebuilt from the runnable ``viz_notebooks/`` notebooks
+- Added the missing ``ideal_genom.population.fst_stats`` module to ``CLAUDE.md``'s module map
+- Fixed stale ``0.2.0`` version references left over from the v0.2.0 YAML migration
+
+**Bug Fixes:**
+
+- Fixed ``docs/source/conf.py``'s ``autodoc_mock_imports``: it mocked ``matplotlib`` and other real project dependencies, which broke ``mpl_toolkits.mplot3d`` imports (via ``textalloc``) and pandas' own optional-``pyarrow`` version check during doc builds
+- Fixed the ``ideal-genom --version`` fallback string (used only when package metadata lookup fails) still reading ``0.2.0``
+
+
+Version 1.1.0
+-------------
 
 **Released:** January 2026
 

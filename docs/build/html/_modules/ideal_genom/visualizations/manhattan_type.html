@@ -1,0 +1,1212 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ideal_genom.visualizations.manhattan_type &mdash; IDEAL-GENOM v1.1.0</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=fc837d61"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            IDEAL-GENOM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../configuration.html">Configuration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../qc_pipeline.html">Quality Control Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gwas_pipeline.html">GWAS Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../vcf_pipeline.html">VCF Processing Pipeline</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_overview.html">API Overview</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../troubleshooting.html">Troubleshooting Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">IDEAL-GENOM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ideal_genom.visualizations.manhattan_type</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ideal_genom.visualizations.manhattan_type</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Generate Manhattan and Miami plots for genome-wide association studies (GWAS).</span>
+
+<span class="sd">This module provides functions to create Manhattan and Miami plots to visualize</span>
+<span class="sd">the significance of genetic variants across the genome.</span>
+
+<span class="sd">Features:</span>
+<span class="sd">- Data processing and visualization of GWAS summary statistics.</span>
+<span class="sd">- Annotation of SNPs with gene information from various sources.</span>
+<span class="sd">- Highlighting and labeling of specific SNPs of interest.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">textalloc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ta</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.axes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Axes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.backend_bases</span><span class="w"> </span><span class="kn">import</span> <span class="n">RendererBase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.backends.backend_agg</span><span class="w"> </span><span class="kn">import</span> <span class="n">FigureCanvasAgg</span> <span class="k">as</span> <span class="n">FigureCanvas</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utilities.annotations</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotate_snp</span>
+
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> - </span><span class="si">%(levelname)s</span><span class="s2"> - </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="compute_relative_pos">
+<a class="viewcode-back" href="../../../visualization_modules.html#ideal_genom.visualizations.manhattan_type.compute_relative_pos">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_relative_pos</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">chr_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;CHR&#39;</span><span class="p">,</span> 
+    <span class="n">pos_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;POS&#39;</span><span class="p">,</span> 
+    <span class="n">p_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;p&#39;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the relative position of probes/SNPs across chromosomes and add a -log10(p-value) column.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : pandas.DataFrame </span>
+<span class="sd">        Input DataFrame containing genomic data.</span>
+<span class="sd">    chr_col : str</span>
+<span class="sd">        Column name for chromosome identifiers. Default is &#39;CHR&#39;.</span>
+<span class="sd">    pos_col : str </span>
+<span class="sd">        Column name for base pair positions. Default is &#39;POS&#39;.</span>
+<span class="sd">    p_col : str </span>
+<span class="sd">        Column name for p-values. Default is &#39;p&#39;.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame </span>
+<span class="sd">        DataFrame with additional columns for relative positions and -log10(p-values).</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError </span>
+<span class="sd">        If input data is not a pandas DataFrame.</span>
+<span class="sd">    ValueError </span>
+<span class="sd">        If `chr_col`, `pos_col` or `p_col` columns are not found in the DataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input data must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">chr_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">chr_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pos_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">pos_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">p_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">p_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Group by chromosome and compute chromosome size</span>
+    <span class="n">chr_grouped</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">chr_col</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">chrlength</span><span class="o">=</span><span class="p">(</span><span class="n">pos_col</span><span class="p">,</span> <span class="s1">&#39;max&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+
+    <span class="c1"># Calculate cumulative chromosome length</span>
+    <span class="n">chr_grouped</span><span class="p">[</span><span class="s1">&#39;cumulativechrlength&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">chr_grouped</span><span class="p">[</span><span class="s1">&#39;chrlength&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span> <span class="o">-</span> <span class="n">chr_grouped</span><span class="p">[</span><span class="s1">&#39;chrlength&#39;</span><span class="p">]</span>
+
+    <span class="c1"># Merge cumulative chromosome length back to the original data</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">chr_grouped</span><span class="p">[[</span><span class="n">chr_col</span><span class="p">,</span> <span class="s1">&#39;cumulativechrlength&#39;</span><span class="p">]],</span> <span class="n">on</span><span class="o">=</span><span class="n">chr_col</span><span class="p">)</span>
+
+    <span class="c1"># Sort by chromosome and position</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="n">chr_col</span><span class="p">,</span> <span class="n">pos_col</span><span class="p">])</span>
+
+    <span class="c1"># Add the relative position of the probe/snp</span>
+    <span class="n">data</span><span class="p">[</span><span class="s1">&#39;rel_pos&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">pos_col</span><span class="p">]</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;cumulativechrlength&#39;</span><span class="p">]</span>
+
+    <span class="c1"># Drop cumulative chromosome length column</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;cumulativechrlength&#39;</span><span class="p">])</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="s1">&#39;log10p&#39;</span><span class="p">]</span><span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">p_col</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="find_chromosomes_center">
+<a class="viewcode-back" href="../../../visualization_modules.html#ideal_genom.visualizations.manhattan_type.find_chromosomes_center">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_chromosomes_center</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">chr_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;CHR&#39;</span><span class="p">,</span> 
+    <span class="n">chr_pos_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;rel_pos&#39;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate the center positions of chromosomes in a given DataFrame. </span>
+<span class="sd">    </span>
+<span class="sd">    This function takes a DataFrame containing chromosome data and calculates the center position </span>
+<span class="sd">    for each chromosome based on the specified chromosome column and chromosome position column.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : pandas.DataFrame</span>
+<span class="sd">        The input DataFrame containing chromosome data.</span>
+<span class="sd">    chr_col : str, optional</span>
+<span class="sd">        The name of the column representing chromosome identifiers (default is &#39;CHR&#39;).</span>
+<span class="sd">    chr_pos_col : str, optional</span>
+<span class="sd">        The name of the column representing relative positions within chromosomes (default is &#39;rel_pos&#39;).</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        A DataFrame with columns &#39;CHR&#39; and &#39;center&#39;, where &#39;CHR&#39; contains chromosome identifiers </span>
+<span class="sd">        and &#39;center&#39; contains the calculated center positions for each chromosome.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If the input data is not a pandas DataFrame.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If the specified chromosome or chromosome position columns are not found in the DataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input data must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">chr_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">chr_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">chr_pos_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">chr_pos_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+
+    <span class="n">chromosomes</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">chr_col</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+
+    <span class="n">axis_center</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="n">chr_col</span><span class="p">,</span> <span class="s1">&#39;center&#39;</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chrom</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chromosomes</span><span class="p">):</span>
+
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="n">chr_col</span><span class="p">]</span> <span class="o">==</span> <span class="n">chrom</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">axis_center</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">chr_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">chrom</span>
+        <span class="n">axis_center</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;center&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">((</span><span class="n">temp</span><span class="p">[</span><span class="n">chr_pos_col</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">+</span><span class="n">temp</span><span class="p">[</span><span class="n">chr_pos_col</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">())</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">axis_center</span></div>
+
+
+<div class="viewcode-block" id="manhattan_process_data">
+<a class="viewcode-back" href="../../../visualization_modules.html#ideal_genom.visualizations.manhattan_type.manhattan_process_data">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">manhattan_process_data</span><span class="p">(</span>
+    <span class="n">data_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">chr_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;CHR&#39;</span><span class="p">,</span> 
+    <span class="n">pos_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;POS&#39;</span><span class="p">,</span> 
+    <span class="n">p_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;p&#39;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Processes the input DataFrame to prepare data for a Manhattan plot.</span>
+
+<span class="sd">    The function computes the relative positions of SNPs across chromosomes,</span>
+<span class="sd">    calculates the -log10(p-values), and finds the center positions of each chromosome.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_df : pandas.DataFrame</span>
+<span class="sd">        The input DataFrame containing genomic data.</span>
+<span class="sd">    chr_col : str (optional)</span>
+<span class="sd">        The column name for chromosome data. Defaults to &#39;CHR&#39;.</span>
+<span class="sd">    pos_col : str (optional)</span>
+<span class="sd">        The column name for position data. Defaults to &#39;POS&#39;.</span>
+<span class="sd">    p_col : str (optional)</span>
+<span class="sd">        The column name for p-value data. Defaults to &#39;p&#39;.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If `data_df` is not a pandas DataFrame.</span>
+<span class="sd">        If `chr_col`, `pos_col`, or `p_col` are not strings.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If the specified columns (`chr_col`, `pos_col`, `p_col`) are not found in the DataFrame.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        A dictionary containing processed data for the Manhattan plot with the following keys:</span>
+
+<span class="sd">        - data : pandas.DataFrame</span>
+<span class="sd">            The processed DataFrame with relative positions and log-transformed p-values.</span>
+<span class="sd">        - axis : dict</span>
+<span class="sd">            The center positions of each chromosome for plotting.</span>
+<span class="sd">        - maxp : float</span>
+<span class="sd">            The maximum log-transformed p-value.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_df</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input data must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">chr_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;chr_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pos_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;pos_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;p_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">chr_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">chr_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pos_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">pos_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">p_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">p_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">compute_relative_pos</span><span class="p">(</span>
+        <span class="n">data_df</span><span class="p">,</span> 
+        <span class="n">chr_col</span><span class="o">=</span><span class="n">chr_col</span><span class="p">,</span> 
+        <span class="n">pos_col</span><span class="o">=</span><span class="n">pos_col</span><span class="p">,</span> 
+        <span class="n">p_col</span>  <span class="o">=</span><span class="n">p_col</span>
+    <span class="p">)</span>
+
+    <span class="n">axis_center</span> <span class="o">=</span> <span class="n">find_chromosomes_center</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">chr_col</span><span class="o">=</span><span class="n">chr_col</span><span class="p">)</span>
+
+    <span class="n">maxp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;log10p&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">skipna</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+    <span class="n">manhattan_data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="s1">&#39;axis&#39;</span><span class="p">:</span> <span class="n">axis_center</span><span class="p">,</span>
+        <span class="s1">&#39;maxp&#39;</span><span class="p">:</span> <span class="n">maxp</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">manhattan_data</span></div>
+
+
+<div class="viewcode-block" id="manhattan_draw">
+<a class="viewcode-back" href="../../../visualization_modules.html#ideal_genom.visualizations.manhattan_type.manhattan_draw">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">manhattan_draw</span><span class="p">(</span>
+    <span class="n">data_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">snp_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">chr_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">pos_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">p_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">plot_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">to_highlight</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(),</span> 
+    <span class="n">highlight_hue</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;hue&#39;</span><span class="p">,</span> 
+    <span class="n">to_annotate</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(),</span> 
+    <span class="n">gen_col</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">build</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;38&#39;</span><span class="p">,</span> 
+    <span class="n">anno_source</span> <span class="o">=</span> <span class="s1">&#39;ensembl&#39;</span><span class="p">,</span> 
+    <span class="n">gtf_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">save_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;manhattan_plot.png&#39;</span><span class="p">,</span> 
+    <span class="n">upper_cap</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">genome_line</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5e-8</span><span class="p">,</span> 
+    <span class="n">suggestive_line</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span> 
+    <span class="n">yaxis_margin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> 
+    <span class="n">dpi</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">400</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a Manhattan plot for genomic data.</span>
+<span class="sd">    </span>
+<span class="sd">    This function creates a Manhattan plot for visualizing the statistical significance of genetic</span>
+<span class="sd">    variants across the genome, typically used in Genome-Wide Association Studies (GWAS).</span>
+<span class="sd">    The plot shows -log10(p-values) against genomic positions, organized by chromosome.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_df : pandas.DataFrame</span>
+<span class="sd">        DataFrame containing the SNP data to be plotted.</span>
+<span class="sd">    snp_col : str</span>
+<span class="sd">        Column name in data_df that contains the SNP identifiers.</span>
+<span class="sd">    chr_col : str</span>
+<span class="sd">        Column name in data_df that contains the chromosome information.</span>
+<span class="sd">    pos_col : str</span>
+<span class="sd">        Column name in data_df that contains the position information.</span>
+<span class="sd">    p_col : str</span>
+<span class="sd">        Column name in data_df that contains the p-values.</span>
+<span class="sd">    plot_dir : str</span>
+<span class="sd">        Directory path where the plot will be saved.</span>
+<span class="sd">    to_highlight : pandas.DataFrame, optional</span>
+<span class="sd">        DataFrame containing SNPs to be highlighted in the plot.</span>
+<span class="sd">    highlight_hue : str, default=&#39;hue&#39;</span>
+<span class="sd">        Column name in to_highlight to be used for color-coding highlighted SNPs.</span>
+<span class="sd">    to_annotate : pandas.DataFrame, optional</span>
+<span class="sd">        DataFrame containing SNPs to be annotated in the plot.</span>
+<span class="sd">    gen_col : str, optional</span>
+<span class="sd">        Column name for gene information to be used in annotation.</span>
+<span class="sd">    build : str, default=&#39;38&#39;</span>
+<span class="sd">        Genome build version (&#39;38&#39; for GRCh38, etc.).</span>
+<span class="sd">    anno_source : str, default=&#39;ensembl&#39;</span>
+<span class="sd">        Source for gene annotation information.</span>
+<span class="sd">    gtf_path : str, optional</span>
+<span class="sd">        Path to a GTF file for gene annotation if not using online sources.</span>
+<span class="sd">    save_name : str, default=&#39;manhattan_plot.png&#39;</span>
+<span class="sd">        Filename for the saved plot.</span>
+<span class="sd">    upper_cap : float, optional</span>
+<span class="sd">        Upper limit for log10(p-values) to be capped at.</span>
+<span class="sd">    genome_line : float, default=5e-8</span>
+<span class="sd">        P-value threshold for genome-wide significance line.</span>
+<span class="sd">    suggestive_line : float, default=1e-5</span>
+<span class="sd">        P-value threshold for suggestive significance line.</span>
+<span class="sd">    yaxis_margin : float, default=10</span>
+<span class="sd">        Additional margin to add to the y-axis maximum.</span>
+<span class="sd">    dpi : int, default=400</span>
+<span class="sd">        Resolution of the saved image in dots per inch.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if the plot was successfully created and saved.</span>
+<span class="sd">    </span>
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If input data is not a pandas DataFrame or to_highlight/to_annotate are not of correct type.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If required columns are not found in the input DataFrame.</span>
+<span class="sd">    FileNotFoundError</span>
+<span class="sd">        If the specified plot directory does not exist.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Saves a Manhattan plot image to the specified directory.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_df</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input data must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">chr_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">chr_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pos_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">pos_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">p_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">p_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">to_highlight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">to_highlight</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;to_highlight must be a list of SNP identifiers.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">to_annotate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">to_annotate</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;to_annotate must be a data frame of SNP identifiers.&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">snp_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">snp_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">chr_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">chr_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pos_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">pos_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">p_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">p_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">upper_cap</span><span class="p">,</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;upper_cap must be a float or None.&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">plot_dir</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Directory &#39;</span><span class="si">{</span><span class="n">plot_dir</span><span class="si">}</span><span class="s2">&#39; not found.&quot;</span><span class="p">)</span>
+    
+    <span class="n">chr_colors</span>           <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;#66c2a5&#39;</span><span class="p">,</span> <span class="s1">&#39;#fc8d62&#39;</span><span class="p">]</span>
+    <span class="n">ylab</span>                 <span class="o">=</span> <span class="s2">&quot;-log10(p)&quot;</span>
+    <span class="n">xlab</span>                 <span class="o">=</span> <span class="s2">&quot;Chromosome&quot;</span>
+    <span class="n">genome_line_color</span>    <span class="o">=</span> <span class="s2">&quot;#636363&quot;</span>
+    <span class="n">suggestive_line_color</span><span class="o">=</span> <span class="s2">&quot;#377eb8&quot;</span>
+
+    <span class="c1"># format data to draw manhattan plot</span>
+    <span class="n">plot_data</span> <span class="o">=</span> <span class="n">manhattan_process_data</span><span class="p">(</span>
+        <span class="n">data_df</span><span class="o">=</span><span class="n">data_df</span><span class="p">,</span>
+        <span class="n">chr_col</span><span class="o">=</span><span class="n">chr_col</span><span class="p">,</span>
+        <span class="n">pos_col</span><span class="o">=</span><span class="n">pos_col</span><span class="p">,</span>
+        <span class="n">p_col</span>  <span class="o">=</span><span class="n">p_col</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">upper_cap</span><span class="p">:</span>
+        <span class="c1"># Cap the log10(p) values at the specified upper limit</span>
+        <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;log10p&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">upper_cap</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;maxp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">upper_cap</span><span class="p">)</span>
+
+    <span class="n">max_x_axis</span> <span class="o">=</span> <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;rel_pos&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+    <span class="c1"># Create the figure</span>
+    <span class="n">fig</span><span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+
+    <span class="c1"># Suppress warnings about the number of chromosomes and just two colors</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">)</span>
+
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span>
+        <span class="n">x</span>      <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;rel_pos&#39;</span><span class="p">],</span> 
+        <span class="n">y</span>      <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;log10p&#39;</span><span class="p">],</span>
+        <span class="n">hue</span>    <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="n">chr_col</span><span class="p">],</span> 
+        <span class="n">palette</span><span class="o">=</span><span class="n">chr_colors</span><span class="p">,</span> 
+        <span class="n">ax</span>     <span class="o">=</span><span class="n">ax</span><span class="p">,</span> 
+        <span class="n">s</span>      <span class="o">=</span><span class="mi">3</span><span class="p">,</span> 
+        <span class="n">legend</span> <span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># set axis labels and font size</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">ylab</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">xlab</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+
+    <span class="c1"># set axis limits</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_x_axis</span><span class="o">+</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;maxp&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">yaxis_margin</span><span class="p">)</span>
+
+    <span class="c1"># set x-axis ticks and labels</span>
+    <span class="n">x_ticks</span><span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">][</span><span class="s1">&#39;center&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">x_labels</span><span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">][</span><span class="n">chr_col</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">ticks</span><span class="o">=</span><span class="n">x_ticks</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">(</span><span class="n">x_labels</span><span class="p">)</span>
+
+    <span class="c1"># set ticks font size</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s1">&#39;both&#39;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+
+    <span class="c1"># add suggestive line</span>
+    <span class="k">if</span> <span class="n">suggestive_line</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span>
+            <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">suggestive_line</span><span class="p">),</span> 
+            <span class="n">color</span>    <span class="o">=</span><span class="n">suggestive_line_color</span><span class="p">,</span> 
+            <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;dashed&#39;</span><span class="p">,</span> 
+            <span class="n">lw</span>       <span class="o">=</span><span class="mf">0.5</span>
+        <span class="p">)</span>
+    
+    <span class="c1"># add genome-wide line</span>
+    <span class="k">if</span> <span class="n">genome_line</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span>
+            <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">genome_line</span><span class="p">),</span> 
+            <span class="n">color</span>    <span class="o">=</span><span class="n">genome_line_color</span><span class="p">,</span> 
+            <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;solid&#39;</span><span class="p">,</span> 
+            <span class="n">lw</span>       <span class="o">=</span><span class="mf">0.5</span>
+        <span class="p">)</span>
+
+    <span class="c1"># highlight SNPs</span>
+    <span class="k">if</span> <span class="n">to_highlight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">to_highlight</span><span class="o">.</span><span class="n">empty</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span> 
+
+            <span class="n">df_subset</span> <span class="o">=</span> <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">to_highlight</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="n">snp_col</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;inner&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">df_subset</span><span class="o">.</span><span class="n">empty</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+            
+                <span class="k">if</span> <span class="n">highlight_hue</span> <span class="ow">in</span> <span class="n">df_subset</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                    <span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span>
+                        <span class="n">data</span>     <span class="o">=</span><span class="n">df_subset</span><span class="p">,</span> 
+                        <span class="n">x</span>        <span class="o">=</span><span class="s1">&#39;rel_pos&#39;</span><span class="p">,</span>
+                        <span class="n">y</span>        <span class="o">=</span><span class="s1">&#39;log10p&#39;</span><span class="p">,</span>
+                        <span class="n">s</span>        <span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+                        <span class="n">ax</span>       <span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+                        <span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span>
+                        <span class="n">hue</span>      <span class="o">=</span><span class="n">highlight_hue</span><span class="p">,</span>
+                        <span class="n">palette</span><span class="o">=</span><span class="s1">&#39;Set1&#39;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span>
+                            <span class="n">data</span>     <span class="o">=</span><span class="n">df_subset</span><span class="p">,</span> 
+                            <span class="n">x</span>        <span class="o">=</span><span class="s1">&#39;rel_pos&#39;</span><span class="p">,</span>
+                            <span class="n">y</span>        <span class="o">=</span><span class="s1">&#39;log10p&#39;</span><span class="p">,</span>
+                            <span class="n">s</span>        <span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+                            <span class="n">ax</span>       <span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+                            <span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;black&quot;</span>
+                        <span class="p">)</span>
+                
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+
+    <span class="c1"># annotate SNPs   </span>
+    <span class="k">if</span> <span class="n">to_annotate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">to_annotate</span><span class="o">.</span><span class="n">empty</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">gen_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="n">variants_toanno</span> <span class="o">=</span> <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">to_annotate</span><span class="p">[</span><span class="n">snp_col</span><span class="p">])]</span>\
+                <span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">variants_toanno</span> <span class="o">=</span> <span class="n">variants_toanno</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">to_annotate</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="n">snp_col</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)</span>
+            <span class="n">variants_toanno</span> <span class="o">=</span> <span class="n">variants_toanno</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="n">gen_col</span><span class="p">:</span><span class="s2">&quot;GENENAME&quot;</span><span class="p">})</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">variants_toanno</span> <span class="o">=</span> <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">to_annotate</span><span class="p">[</span><span class="n">snp_col</span><span class="p">])]</span>\
+                <span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="p">(</span><span class="n">variants_toanno</span><span class="o">.</span><span class="n">empty</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">):</span>
+
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Type of gtf_path is </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">gtf_path</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+                <span class="n">variants_toanno</span> <span class="o">=</span> <span class="n">annotate_snp</span><span class="p">(</span>
+                    <span class="n">insumstats</span><span class="o">=</span><span class="n">variants_toanno</span><span class="p">,</span>
+                    <span class="n">chrom</span>     <span class="o">=</span><span class="n">chr_col</span><span class="p">,</span>
+                    <span class="n">pos</span>       <span class="o">=</span><span class="n">pos_col</span><span class="p">,</span>
+                    <span class="n">build</span>     <span class="o">=</span><span class="n">build</span><span class="p">,</span>
+                    <span class="n">source</span>    <span class="o">=</span><span class="n">anno_source</span><span class="p">,</span>
+                    <span class="n">gtf_path</span>  <span class="o">=</span><span class="n">gtf_path</span>  <span class="c1"># type: ignore</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;GENE&quot;</span><span class="p">:</span><span class="s2">&quot;GENENAME&quot;</span><span class="p">})</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">manhattan_type_annotate</span><span class="p">(</span>
+            <span class="n">axes</span>           <span class="o">=</span><span class="n">ax</span><span class="p">,</span> 
+            <span class="n">data</span>           <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">],</span> 
+            <span class="n">variants_toanno</span><span class="o">=</span><span class="n">variants_toanno</span><span class="p">,</span> 
+            <span class="n">max_x_axis</span>     <span class="o">=</span><span class="n">max_x_axis</span><span class="p">,</span> 
+            <span class="n">suggestive_line</span><span class="o">=</span><span class="n">suggestive_line</span><span class="p">,</span> 
+            <span class="n">genome_line</span>    <span class="o">=</span><span class="n">genome_line</span>
+        <span class="p">)</span>
+
+    <span class="c1"># save the plot</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">plot_dir</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span>
+    <span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="miami_process_data">
+<a class="viewcode-back" href="../../../visualization_modules.html#ideal_genom.visualizations.manhattan_type.miami_process_data">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">miami_process_data</span><span class="p">(</span>
+    <span class="n">data_top</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">data_bottom</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">chr_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">pos_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">p_col</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Processes Miami plot data by preparing, computing relative positions, and splitting the data.</span>
+
+<span class="sd">    For each part of the Miami plot (top and bottom), this function computes the relative positions of SNPs,</span>
+<span class="sd">    calculates the -log10(p-values), and finds the center positions of chromosomes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_top : pandas.DataFrame</span>
+<span class="sd">        The top part of the data to be processed.</span>
+<span class="sd">    data_bottom : pandas.DataFrame </span>
+<span class="sd">        The bottom part of the data to be processed.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict </span>
+<span class="sd">        A dictionary containing the processed data with the following keys:</span>
+<span class="sd">            - &#39;upper&#39; : pandas.DataFrame </span>
+<span class="sd">                DataFrame containing the top part of the processed data.</span>
+<span class="sd">            - &#39;lower&#39; : pandas.DataFrame </span>
+<span class="sd">                DataFrame containing the bottom part of the processed data.</span>
+<span class="sd">            - &#39;axis&#39; : pandas.DataFrame</span>
+<span class="sd">                DataFrame with the center positions of the chromosomes.</span>
+<span class="sd">            - &#39;maxp&#39; : float</span>
+<span class="sd">                The maximum -log10(p-value) in the data.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If `data_top` or `data_bottom` is not a pandas DataFrame.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If the specified columns (`chr_col`, `pos_col`, `p_col`) are not found in the DataFrames.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_top</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input data must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_bottom</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input data must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">chr_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_top</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">chr_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pos_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_top</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">pos_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">p_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_top</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">p_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+
+    <span class="n">data_top</span><span class="p">[</span><span class="s1">&#39;split_by&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="s1">&#39;top&#39;</span>
+    <span class="n">data_bottom</span><span class="p">[</span><span class="s1">&#39;split_by&#39;</span><span class="p">]</span><span class="o">=</span> <span class="s1">&#39;bottom&#39;</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">data_top</span><span class="p">,</span> <span class="n">data_bottom</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">compute_relative_pos</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">chr_col</span><span class="o">=</span><span class="n">chr_col</span><span class="p">,</span> <span class="n">pos_col</span><span class="o">=</span><span class="n">pos_col</span><span class="p">,</span> <span class="n">p_col</span><span class="o">=</span><span class="n">p_col</span><span class="p">)</span>
+
+    <span class="n">axis_center</span> <span class="o">=</span> <span class="n">find_chromosomes_center</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">chr_col</span><span class="o">=</span><span class="n">chr_col</span><span class="p">,</span> <span class="n">chr_pos_col</span><span class="o">=</span><span class="s1">&#39;rel_pos&#39;</span><span class="p">)</span>
+
+    <span class="n">maxp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;log10p&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">skipna</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+    <span class="n">miami_data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;upper&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;split_by&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;top&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="s1">&#39;lower&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;split_by&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;bottom&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="s1">&#39;axis&#39;</span><span class="p">:</span> <span class="n">axis_center</span><span class="p">,</span>
+        <span class="s1">&#39;maxp&#39;</span><span class="p">:</span> <span class="n">maxp</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">miami_data</span></div>
+
+
+<div class="viewcode-block" id="manhattan_type_annotate">
+<a class="viewcode-back" href="../../../visualization_modules.html#ideal_genom.visualizations.manhattan_type.manhattan_type_annotate">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">manhattan_type_annotate</span><span class="p">(</span>
+    <span class="n">axes</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">variants_toanno</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">max_x_axis</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> 
+    <span class="n">suggestive_line</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> 
+    <span class="n">genome_line</span><span class="p">:</span> <span class="nb">float</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Annotates a Manhattan plot with gene names.</span>
+
+<span class="sd">    This function uses the textalloc library to place gene names on a Manhattan plot.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    axes : Axes (matplotlib.axes.Axes)</span>
+<span class="sd">        The matplotlib axes object where the Manhattan plot is drawn.</span>
+<span class="sd">    data : pandas.DataFrame</span>
+<span class="sd">        DataFrame containing the scatter plot data with columns &#39;rel_pos&#39; and &#39;log10p&#39;.</span>
+<span class="sd">    variants_toanno : pandas.DataFrame</span>
+<span class="sd">        DataFrame containing the variants to annotate with columns &#39;rel_pos&#39;, &#39;log10p&#39;, and &#39;GENENAME&#39;.</span>
+<span class="sd">    max_x_axis : float</span>
+<span class="sd">        The maximum value for the x-axis.</span>
+<span class="sd">    suggestive_line : float</span>
+<span class="sd">        The y-value for the suggestive significance line.</span>
+<span class="sd">    genome_line : float</span>
+<span class="sd">        The y-value for the genome-wide significance line.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    matplotlib.axes.Axes.</span>
+<span class="sd">        The matplotlib axes object with annotations.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If the input parameters are not of the expected types.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">Axes</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;axes must be a matplotlib Axes object.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;data must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">variants_toanno</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;variants_toanno must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">max_x_axis</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;max_x_axis must be an integer or float.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">suggestive_line</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;suggestive_line must be a float.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">genome_line</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;genome_line must be a float.&quot;</span><span class="p">)</span>
+    
+    <span class="n">x_lines_coor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_x_axis</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="c1"># list with a grid of x-coordinates for the lines</span>
+    
+    <span class="n">texts</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># a list to store text annotations for adjustment</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="p">[]</span>      <span class="c1"># a list to store x-coordinates for adjustment</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="p">[]</span>      <span class="c1"># a list to store y-coordinates for adjustment</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">variants_toanno</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+
+        <span class="n">x</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;rel_pos&#39;</span><span class="p">])</span>
+        <span class="n">y</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;log10p&#39;</span><span class="p">])</span>
+        <span class="n">texts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;GENENAME&#39;</span><span class="p">])</span>
+
+    <span class="n">allocate</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">allocate</span><span class="p">(</span>
+            <span class="n">axes</span><span class="p">,</span>            
+            <span class="n">x</span>        <span class="o">=</span><span class="n">x</span><span class="p">,</span>     <span class="c1"># x-coordinates of the data point to annotate</span>
+            <span class="n">y</span>        <span class="o">=</span><span class="n">y</span><span class="p">,</span>     <span class="c1"># y-coordinates of the data point to annotate</span>
+            <span class="n">text_list</span><span class="o">=</span><span class="n">texts</span><span class="p">,</span> <span class="c1"># list of text to annotate</span>
+            <span class="n">x_scatter</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;rel_pos&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span> <span class="c1"># all scatter points x-coordinates</span>
+            <span class="n">y_scatter</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;log10p&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>  <span class="c1"># all scatter points y-coordinates</span>
+            <span class="n">linecolor</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span>                      <span class="c1"># color of the line connecting the text to the data point</span>
+            <span class="n">textsize</span> <span class="o">=</span><span class="mi">10</span><span class="p">,</span>                            <span class="c1"># size of the text (Default to Nature standard)</span>
+            <span class="n">bbox</span>     <span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">boxstyle</span><span class="o">=</span><span class="s1">&#39;round,pad=0.3&#39;</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;#f0f0f0&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">),</span>
+            <span class="n">x_lines</span>  <span class="o">=</span> <span class="p">[</span><span class="n">x_lines_coor</span><span class="p">,</span> <span class="n">x_lines_coor</span><span class="p">],</span>
+            <span class="n">y_lines</span>  <span class="o">=</span> <span class="p">[[</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">suggestive_line</span><span class="p">)]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">x_lines_coor</span><span class="p">),</span> <span class="p">[</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">genome_line</span><span class="p">)]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">x_lines_coor</span><span class="p">)],</span>
+            <span class="n">avoid_label_lines_overlap</span> <span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">avoid_crossing_label_lines</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">min_distance</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+            <span class="n">max_distance</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
+            <span class="n">margin</span>      <span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+            <span class="n">rotation</span>    <span class="o">=</span><span class="mi">90</span><span class="p">,</span>
+            <span class="n">nbr_candidates</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+            <span class="n">priority_strategy</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+            <span class="n">plot_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+        <span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">axes</span></div>
+
+
+<div class="viewcode-block" id="miami_draw_anno_lines">
+<a class="viewcode-back" href="../../../visualization_modules.html#ideal_genom.visualizations.manhattan_type.miami_draw_anno_lines">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">miami_draw_anno_lines</span><span class="p">(</span><span class="n">renderer</span><span class="p">:</span> <span class="n">RendererBase</span><span class="p">,</span> <span class="n">axes</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">texts</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">variants_toanno</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Draws annotation lines from text labels to their corresponding data points on a plot.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    renderer : RendererBase </span>
+<span class="sd">        The renderer used to draw the plot.</span>
+<span class="sd">    axes : Axes (matplotlib.axes.Axes) </span>
+<span class="sd">        The axes on which the plot is drawn.</span>
+<span class="sd">    texts : list</span>
+<span class="sd">        A list of text objects to annotate.</span>
+<span class="sd">    variants_toanno : pandas.DataFrame</span>
+<span class="sd">        A DataFrame containing the data points to annotate, with columns &#39;GENENAME&#39;, &#39;rel_pos&#39;, and &#39;log10p&#39;.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    matplotlib.axes.Axes </span>
+<span class="sd">        The axes with the annotation lines drawn.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">math</span><span class="w"> </span><span class="kn">import</span> <span class="n">dist</span>
+
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">texts</span><span class="p">)):</span>
+
+        <span class="n">text_obj</span> <span class="o">=</span> <span class="n">texts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="n">text_obj</span><span class="o">.</span><span class="n">get_window_extent</span><span class="p">(</span><span class="n">renderer</span><span class="o">=</span><span class="n">renderer</span><span class="p">)</span>
+        
+        <span class="c1"># Transform to data coordinates the corners of the text bbox</span>
+        <span class="n">data_coords</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">transData</span><span class="o">.</span><span class="n">inverted</span><span class="p">()</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">bbox</span><span class="o">.</span><span class="n">corners</span><span class="p">())</span> <span class="c1"># list with coordinates of the text box</span>
+
+        <span class="n">anno</span> <span class="o">=</span> <span class="n">text_obj</span><span class="o">.</span><span class="n">get_text</span><span class="p">()</span>
+
+        <span class="n">data_x</span> <span class="o">=</span> <span class="n">variants_toanno</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">variants_toanno</span><span class="p">[</span><span class="s1">&#39;GENENAME&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">anno</span><span class="p">,</span> <span class="s1">&#39;rel_pos&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># type: ignore</span>
+        <span class="n">data_y</span> <span class="o">=</span> <span class="n">variants_toanno</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">variants_toanno</span><span class="p">[</span><span class="s1">&#39;GENENAME&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">anno</span><span class="p">,</span> <span class="s1">&#39;log10p&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># type: ignore</span>
+
+        <span class="n">closest_point</span> <span class="o">=</span> <span class="n">data_coords</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">data_coords</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">dist</span><span class="p">([</span><span class="n">data_x</span><span class="p">,</span> <span class="n">data_y</span><span class="p">],</span> <span class="n">point</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">dist</span><span class="p">([</span><span class="n">data_x</span><span class="p">,</span> <span class="n">data_y</span><span class="p">],</span> <span class="n">closest_point</span><span class="p">):</span>
+                <span class="n">closest_point</span> <span class="o">=</span> <span class="n">point</span> 
+
+        <span class="n">axes</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">data_x</span><span class="p">,</span> <span class="n">closest_point</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> 
+            <span class="p">[</span><span class="n">data_y</span><span class="p">,</span> <span class="n">closest_point</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> 
+            <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> 
+            <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;:&#39;</span><span class="p">,</span> 
+            <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">axes</span></div>
+
+
+<div class="viewcode-block" id="miami_draw">
+<a class="viewcode-back" href="../../../visualization_modules.html#ideal_genom.visualizations.manhattan_type.miami_draw">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">miami_draw</span><span class="p">(</span>
+    <span class="n">df_top</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">df_bottom</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">snp_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">chr_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">pos_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">p_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">plots_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">top_highlights</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span> 
+    <span class="n">top_annotations</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(),</span> 
+    <span class="n">bottom_highlights</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span> 
+    <span class="n">bottom_annotations</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(),</span> 
+    <span class="n">top_gen_col</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">bottom_gen_col</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">gtf_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ensemble&quot;</span><span class="p">,</span> 
+    <span class="n">build</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;38&#39;</span><span class="p">,</span> 
+    <span class="n">save_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;miami_plot.png&#39;</span><span class="p">,</span> 
+    <span class="n">legend_top</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;top GWAS&#39;</span><span class="p">,</span> 
+    <span class="n">legend_bottom</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;bottom GWAS&#39;</span><span class="p">,</span> 
+    <span class="n">dpi</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">400</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Draws a Miami plot (a combination of two Manhattan plots) for visualizing GWAS results.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df_top : pandas.DataFrame</span>
+<span class="sd">        DataFrame containing the top plot data.</span>
+<span class="sd">    df_bottom : pandas.DataFrame</span>
+<span class="sd">        DataFrame containing the bottom plot data.</span>
+<span class="sd">    snp_col : str</span>
+<span class="sd">        Column name for SNP identifiers.</span>
+<span class="sd">    chr_col : str</span>
+<span class="sd">        Column name for chromosome identifiers.</span>
+<span class="sd">    pos_col : str</span>
+<span class="sd">        Column name for base pair positions.</span>
+<span class="sd">    p_col : str</span>
+<span class="sd">        Column name for p-values.</span>
+<span class="sd">    plots_dir : str</span>
+<span class="sd">        Directory where the plot will be saved.</span>
+<span class="sd">    top_highlights : list, optional</span>
+<span class="sd">        List of SNPs to highlight in the top plot.</span>
+<span class="sd">    top_annotations : list, optional</span>
+<span class="sd">        List of SNPs to annotate in the top plot.</span>
+<span class="sd">    bottom_highlights : list, optional</span>
+<span class="sd">        List of SNPs to highlight in the bottom plot.</span>
+<span class="sd">    bottom_annotations : list, optional</span>
+<span class="sd">        List of SNPs to annotate in the bottom plot.</span>
+<span class="sd">    gtf_path : str, optional</span>
+<span class="sd">        Path to the GTF file for gene annotation. If None, the file will be downloaded.</span>
+<span class="sd">    save_name : str, optional</span>
+<span class="sd">        Name of the file to save the plot as. Default is &#39;miami_plot.jpeg&#39;.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if the plot is successfully created and saved, False otherwise.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If `df_top`, `df_bottom`, `top_annotations`, or `bottom_annotations` are not pandas DataFrames.</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If `top_highlights` or `bottom_highlights` are not lists of SNP identifiers.</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If `save_name`, `legend_top`, or `legend_bottom` are not strings.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If required columns (`chr_col`, `pos_col`, `p_col`) are not found in the DataFrames.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Saves a Miami plot image to the specified directory.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df_top</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input data must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df_bottom</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Input data must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">chr_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df_top</span><span class="o">.</span><span class="n">columns</span> <span class="ow">or</span> <span class="n">chr_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df_bottom</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">chr_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pos_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df_top</span><span class="o">.</span><span class="n">columns</span> <span class="ow">or</span> <span class="n">pos_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df_bottom</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">pos_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">p_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df_top</span><span class="o">.</span><span class="n">columns</span> <span class="ow">or</span> <span class="n">p_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df_bottom</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column &#39;</span><span class="si">{</span><span class="n">p_col</span><span class="si">}</span><span class="s2">&#39; not found in the input DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">plots_dir</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Directory &#39;</span><span class="si">{</span><span class="n">plots_dir</span><span class="si">}</span><span class="s2">&#39; not found.&quot;</span><span class="p">)</span>
+    
+    <span class="n">annot_high</span> <span class="o">=</span> <span class="p">[</span><span class="n">top_highlights</span><span class="p">,</span>  <span class="n">bottom_highlights</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">lst</span> <span class="ow">in</span> <span class="n">annot_high</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lst</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Annotation lists must be lists of SNP identifiers.&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">lst</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Annotation lists must be lists of SNP identifiers.&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">top_annotations</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Annotation data must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bottom_annotations</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Annotation data must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">save_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;save_name must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">legend_top</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;legend_top must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">legend_bottom</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;legend_bottom must be a string.&quot;</span><span class="p">)</span>
+
+    <span class="n">chr_colors</span>           <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;#66c2a5&#39;</span><span class="p">,</span> <span class="s1">&#39;#fc8d62&#39;</span><span class="p">]</span>
+    <span class="n">upper_ylab</span>           <span class="o">=</span> <span class="s2">&quot;-log10(p)&quot;</span> 
+    <span class="n">lower_ylab</span>           <span class="o">=</span> <span class="s2">&quot;-log10(p)&quot;</span> 
+    <span class="n">genome_line</span>          <span class="o">=</span> <span class="mf">5e-8</span>
+    <span class="n">genome_line_color</span>    <span class="o">=</span> <span class="s2">&quot;red&quot;</span>
+    <span class="n">suggestive_line</span>      <span class="o">=</span> <span class="mf">1e-5</span> 
+    <span class="n">suggestive_line_color</span><span class="o">=</span> <span class="s2">&quot;blue&quot;</span>
+
+    <span class="c1"># Suppress warnings about the number of chromosomes and just two colors</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">)</span>
+
+    <span class="c1"># format data to draw miami plot</span>
+    <span class="n">plot_data</span> <span class="o">=</span> <span class="n">miami_process_data</span><span class="p">(</span><span class="n">df_top</span><span class="p">,</span> <span class="n">df_bottom</span><span class="p">,</span> <span class="n">chr_col</span><span class="o">=</span><span class="n">chr_col</span><span class="p">,</span> <span class="n">pos_col</span><span class="o">=</span><span class="n">pos_col</span><span class="p">,</span> <span class="n">p_col</span><span class="o">=</span><span class="n">p_col</span><span class="p">)</span>
+
+    <span class="c1"># Set axis labels for upper and lower plot</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">format_ylabel</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="se">\n</span><span class="s2">-log10(p)&quot;</span> <span class="k">if</span> <span class="n">label</span> <span class="o">!=</span> <span class="s2">&quot;-log10(p)&quot;</span> <span class="k">else</span> <span class="sa">r</span><span class="s2">&quot;-log10(p)&quot;</span>
+    
+    <span class="n">upper_ylab</span> <span class="o">=</span> <span class="n">format_ylabel</span><span class="p">(</span><span class="n">upper_ylab</span><span class="p">)</span>
+    <span class="n">lower_ylab</span> <span class="o">=</span> <span class="n">format_ylabel</span><span class="p">(</span><span class="n">lower_ylab</span><span class="p">)</span>
+
+    <span class="n">max_x_axis</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">][</span><span class="s1">&#39;rel_pos&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">][</span><span class="s1">&#39;rel_pos&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">())</span><span class="o">+</span><span class="mi">10</span>
+
+    <span class="c1"># Create the figure</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">13</span><span class="p">))</span>
+
+    <span class="c1"># Create the upper plot</span>
+
+    <span class="n">ax_upper</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">)</span>
+
+    <span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span>
+        <span class="n">x</span>      <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">][</span><span class="s1">&#39;rel_pos&#39;</span><span class="p">],</span> 
+        <span class="n">y</span>      <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">][</span><span class="s1">&#39;log10p&#39;</span><span class="p">],</span>
+        <span class="n">hue</span>    <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">][</span><span class="n">chr_col</span><span class="p">],</span> 
+        <span class="n">palette</span><span class="o">=</span><span class="n">chr_colors</span><span class="p">,</span> 
+        <span class="n">ax</span>     <span class="o">=</span><span class="n">ax_upper</span><span class="p">,</span> 
+        <span class="n">s</span>      <span class="o">=</span><span class="mi">3</span><span class="p">,</span> 
+        <span class="n">legend</span> <span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span>
+    <span class="p">)</span>
+    <span class="n">ax_upper</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">upper_ylab</span><span class="p">)</span>
+    <span class="n">ax_upper</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_x_axis</span><span class="p">)</span>
+
+    <span class="n">x_ticks</span> <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">][</span><span class="s1">&#39;center&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">x_labels</span><span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">][</span><span class="n">chr_col</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="n">ax_upper</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">ticks</span><span class="o">=</span><span class="n">x_ticks</span><span class="p">)</span>  <span class="c1"># Set x-ticks</span>
+    <span class="n">ax_upper</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">(</span><span class="n">x_labels</span><span class="p">)</span>
+    
+    <span class="c1"># Add genome-wide and suggestive lines</span>
+    <span class="k">if</span> <span class="n">suggestive_line</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax_upper</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">suggestive_line</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="n">suggestive_line_color</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;solid&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">genome_line</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax_upper</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">genome_line</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="n">genome_line_color</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;dashed&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+
+    <span class="c1"># Create the lower plot</span>
+    <span class="n">ax_lower</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">212</span><span class="p">)</span>
+    <span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span>
+        <span class="n">x</span>      <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">][</span><span class="s1">&#39;rel_pos&#39;</span><span class="p">],</span> 
+        <span class="n">y</span>      <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">][</span><span class="s1">&#39;log10p&#39;</span><span class="p">],</span>
+        <span class="n">hue</span>    <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">][</span><span class="n">chr_col</span><span class="p">],</span> 
+        <span class="n">palette</span><span class="o">=</span><span class="n">chr_colors</span><span class="p">,</span> 
+        <span class="n">ax</span>     <span class="o">=</span><span class="n">ax_lower</span><span class="p">,</span> 
+        <span class="n">s</span>      <span class="o">=</span><span class="mi">3</span><span class="p">,</span> 
+        <span class="n">legend</span> <span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span>
+    <span class="p">)</span>
+    <span class="n">ax_lower</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">lower_ylab</span><span class="p">)</span>
+    <span class="n">ax_lower</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;maxp&#39;</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Reverse y-axis</span>
+    <span class="n">ax_lower</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_x_axis</span><span class="p">)</span>
+
+    <span class="n">ax_lower</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">ticks</span><span class="o">=</span><span class="n">x_ticks</span><span class="p">)</span> <span class="c1"># Set x-ticks</span>
+    <span class="n">ax_lower</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">([])</span>
+    <span class="n">ax_lower</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_ticks_position</span><span class="p">(</span><span class="s1">&#39;top&#39;</span><span class="p">)</span>
+    
+    <span class="c1"># Add genome-wide and suggestive lines</span>
+    <span class="k">if</span> <span class="n">suggestive_line</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax_lower</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">suggestive_line</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="n">suggestive_line_color</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;solid&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">genome_line</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax_lower</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">genome_line</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="n">genome_line_color</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;dashed&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+    
+    <span class="n">top</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">top_highlights</span><span class="p">)</span>
+    <span class="n">bottom</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">bottom_highlights</span><span class="p">)</span>
+
+    <span class="n">both</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">top_only</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">bottom_only</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">top_highlights</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">bottom_highlights</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+
+        <span class="n">both</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">top</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">bottom</span><span class="p">))</span>
+        <span class="n">top_only</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">top</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">bottom</span><span class="p">))</span>
+        <span class="n">bottom_only</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">bottom</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">top</span><span class="p">))</span>
+
+        <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">][</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">][</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">][</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">both</span><span class="p">),</span> <span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;on_both&#39;</span>
+        <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">][</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">both</span><span class="p">),</span> <span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;on_both&#39;</span>
+
+        <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">][</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">top_only</span><span class="p">),</span> <span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;top_only&#39;</span>
+        <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">][</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">top_only</span><span class="p">),</span> <span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;top_only&#39;</span>
+
+        <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">][</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">bottom_only</span><span class="p">),</span> <span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;bottom_only&#39;</span>
+        <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">][</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">bottom_only</span><span class="p">),</span> <span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;bottom_only&#39;</span>
+
+        <span class="n">custom_hue_colors</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;on_both&quot;</span>    <span class="p">:</span> <span class="s2">&quot;#7B68EE&quot;</span><span class="p">,</span>  
+        <span class="s2">&quot;top_only&quot;</span>   <span class="p">:</span> <span class="s2">&quot;#008080&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;bottom_only&quot;</span><span class="p">:</span> <span class="s2">&quot;#FF1493&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="n">ax_upper</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span>
+            <span class="n">data</span>    <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">][</span><span class="o">~</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">][</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">()]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">x</span>       <span class="o">=</span><span class="s1">&#39;rel_pos&#39;</span><span class="p">,</span> 
+            <span class="n">y</span>       <span class="o">=</span><span class="s1">&#39;log10p&#39;</span><span class="p">,</span> 
+            <span class="n">ax</span>      <span class="o">=</span><span class="n">ax_upper</span><span class="p">,</span>
+            <span class="n">hue</span>     <span class="o">=</span><span class="s1">&#39;type&#39;</span><span class="p">,</span>
+            <span class="n">palette</span> <span class="o">=</span><span class="n">custom_hue_colors</span><span class="p">,</span>
+            <span class="n">size</span>    <span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+            <span class="n">legend</span>  <span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span>
+        <span class="p">)</span>
+
+        <span class="n">ax_lower</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span>
+            <span class="n">data</span>    <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">][</span><span class="o">~</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">][</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">()]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">x</span>       <span class="o">=</span><span class="s1">&#39;rel_pos&#39;</span><span class="p">,</span> 
+            <span class="n">y</span>       <span class="o">=</span><span class="s1">&#39;log10p&#39;</span><span class="p">,</span> 
+            <span class="n">ax</span>      <span class="o">=</span><span class="n">ax_lower</span><span class="p">,</span>
+            <span class="n">hue</span>     <span class="o">=</span><span class="s1">&#39;type&#39;</span><span class="p">,</span>
+            <span class="n">palette</span> <span class="o">=</span><span class="n">custom_hue_colors</span><span class="p">,</span>
+            <span class="n">size</span>    <span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+            <span class="n">legend</span>  <span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># adjust layout</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+
+    <span class="c1"># render and draw the figure without showing it</span>
+    <span class="n">canvas</span> <span class="o">=</span> <span class="n">FigureCanvas</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">set_canvas</span><span class="p">(</span><span class="n">canvas</span><span class="p">)</span>
+    
+    <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">get_renderer</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">top_annotations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        
+        <span class="k">if</span> <span class="n">top_gen_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            
+            <span class="n">top_variants_toanno</span> <span class="o">=</span> <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">][</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">][</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">top_annotations</span><span class="p">[</span><span class="n">snp_col</span><span class="p">])]</span>\
+                <span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">top_variants_toanno</span> <span class="o">=</span> <span class="n">top_variants_toanno</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">top_annotations</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="n">snp_col</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)</span>
+            <span class="n">top_variants_toanno</span> <span class="o">=</span> <span class="n">top_variants_toanno</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="n">top_gen_col</span><span class="p">:</span><span class="s2">&quot;GENENAME&quot;</span><span class="p">})</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">top_variants_toanno</span> <span class="o">=</span> <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">][</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">][</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">top_annotations</span><span class="p">[</span><span class="n">snp_col</span><span class="p">])]</span>\
+                <span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                
+            <span class="c1"># get gene names for upper plot</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">top_variants_toanno</span><span class="o">.</span><span class="n">empty</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">):</span>
+                <span class="n">top_variants_toanno</span> <span class="o">=</span> <span class="n">annotate_snp</span><span class="p">(</span>
+                    <span class="n">top_variants_toanno</span><span class="p">,</span>
+                    <span class="n">chrom</span>  <span class="o">=</span><span class="n">chr_col</span><span class="p">,</span>
+                    <span class="n">pos</span>    <span class="o">=</span><span class="n">pos_col</span><span class="p">,</span>
+                    <span class="n">build</span>  <span class="o">=</span><span class="n">build</span><span class="p">,</span>
+                    <span class="n">source</span> <span class="o">=</span><span class="n">source</span><span class="p">,</span>
+                    <span class="n">gtf_path</span><span class="o">=</span><span class="n">gtf_path</span> <span class="c1"># type: ignore</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;GENE&quot;</span><span class="p">:</span><span class="s2">&quot;GENENAME&quot;</span><span class="p">})</span>
+
+        <span class="c1"># annotate upper plot</span>
+        <span class="n">ax_upper</span> <span class="o">=</span> <span class="n">manhattan_type_annotate</span><span class="p">(</span>
+            <span class="n">axes</span>           <span class="o">=</span><span class="n">ax_upper</span><span class="p">,</span> 
+            <span class="n">data</span>           <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">],</span> 
+            <span class="n">variants_toanno</span><span class="o">=</span><span class="n">top_variants_toanno</span><span class="p">,</span> 
+            <span class="n">max_x_axis</span>     <span class="o">=</span><span class="n">max_x_axis</span><span class="p">,</span> 
+            <span class="n">suggestive_line</span><span class="o">=</span><span class="n">suggestive_line</span><span class="p">,</span> 
+            <span class="n">genome_line</span>    <span class="o">=</span><span class="n">genome_line</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">bottom_annotations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">bottom_gen_col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="n">bottom_variants_toanno</span> <span class="o">=</span> <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">][</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">][</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">bottom_annotations</span><span class="p">[</span><span class="n">snp_col</span><span class="p">])]</span>\
+                <span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">bottom_variants_toanno</span> <span class="o">=</span> <span class="n">bottom_variants_toanno</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">bottom_annotations</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="n">snp_col</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)</span>
+            <span class="n">bottom_variants_toanno</span> <span class="o">=</span> <span class="n">bottom_variants_toanno</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="n">bottom_gen_col</span><span class="p">:</span><span class="s2">&quot;GENENAME&quot;</span><span class="p">})</span>
+        
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">bottom_variants_toanno</span> <span class="o">=</span> <span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">][</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">][</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">bottom_annotations</span><span class="p">[</span><span class="n">snp_col</span><span class="p">])]</span>\
+            <span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># get gane names for bottom plot</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">bottom_variants_toanno</span><span class="o">.</span><span class="n">empty</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">):</span>
+                <span class="n">bottom_variants_toanno</span> <span class="o">=</span> <span class="n">annotate_snp</span><span class="p">(</span>
+                    <span class="n">bottom_variants_toanno</span><span class="p">,</span>
+                    <span class="n">chrom</span>  <span class="o">=</span><span class="n">chr_col</span><span class="p">,</span>
+                    <span class="n">pos</span>    <span class="o">=</span><span class="n">pos_col</span><span class="p">,</span>
+                    <span class="n">build</span>  <span class="o">=</span><span class="n">build</span><span class="p">,</span>
+                    <span class="n">source</span> <span class="o">=</span><span class="n">source</span><span class="p">,</span>
+                    <span class="n">gtf_path</span><span class="o">=</span><span class="n">gtf_path</span> <span class="c1"># type: ignore</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;GENE&quot;</span><span class="p">:</span><span class="s2">&quot;GENENAME&quot;</span><span class="p">})</span>
+
+        
+        <span class="c1"># annotate lower plot</span>
+        <span class="n">ax_lower</span><span class="o">=</span> <span class="n">manhattan_type_annotate</span><span class="p">(</span>
+            <span class="n">axes</span>           <span class="o">=</span><span class="n">ax_lower</span><span class="p">,</span> 
+            <span class="n">data</span>           <span class="o">=</span><span class="n">plot_data</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">],</span> 
+            <span class="n">variants_toanno</span><span class="o">=</span><span class="n">bottom_variants_toanno</span><span class="p">,</span> 
+            <span class="n">max_x_axis</span>     <span class="o">=</span><span class="n">max_x_axis</span><span class="p">,</span> 
+            <span class="n">suggestive_line</span><span class="o">=</span><span class="n">suggestive_line</span><span class="p">,</span> 
+            <span class="n">genome_line</span>    <span class="o">=</span><span class="n">genome_line</span>
+        <span class="p">)</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.lines</span><span class="w"> </span><span class="kn">import</span> <span class="n">Line2D</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">top_highlights</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">bottom_highlights</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">both</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+
+            <span class="n">custom_dots</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="s2">&quot;#7B68EE&quot;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Top Hits both&#39;</span><span class="p">),</span>
+                <span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="s2">&quot;#008080&quot;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Top Hits </span><span class="si">{</span><span class="n">legend_top</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">),</span>
+                <span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="s2">&quot;#FF1493&quot;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Top Hits </span><span class="si">{</span><span class="n">legend_bottom</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">),</span>
+            <span class="p">]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">custom_dots</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="s2">&quot;#008080&quot;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Top Hits </span><span class="si">{</span><span class="n">legend_top</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">),</span>
+                <span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="s2">&quot;#FF1493&quot;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Top Hits </span><span class="si">{</span><span class="n">legend_bottom</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">),</span>
+            <span class="p">]</span>
+
+        <span class="c1"># Add custom legend</span>
+        <span class="n">ax_upper</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">handles</span><span class="o">=</span><span class="n">custom_dots</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Legend&#39;</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;best&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+    
+    <span class="n">ax_lower</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Chromosome&quot;</span><span class="p">)</span>
+    <span class="n">ax_upper</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># save ad show the plot</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">plots_dir</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Luis Giraldo González, Amabel Tenghe.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

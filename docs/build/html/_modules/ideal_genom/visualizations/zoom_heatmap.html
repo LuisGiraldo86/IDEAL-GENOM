@@ -1,0 +1,1168 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ideal_genom.visualizations.zoom_heatmap &mdash; IDEAL-GENOM v1.1.0</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=fc837d61"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            IDEAL-GENOM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../configuration.html">Configuration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../qc_pipeline.html">Quality Control Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gwas_pipeline.html">GWAS Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../vcf_pipeline.html">VCF Processing Pipeline</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_overview.html">API Overview</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../troubleshooting.html">Troubleshooting Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">IDEAL-GENOM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ideal_genom.visualizations.zoom_heatmap</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ideal_genom.visualizations.zoom_heatmap</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module provides functions to create a zoomed heatmap visualization</span>
+<span class="sd">of SNP associations, gene annotations, and linkage disequilibrium (LD) patterns.</span>
+
+<span class="sd">It includes filtering and annotating SNP data, calculating LD matrices,</span>
+<span class="sd">and generating a three-panel plot with:</span>
+<span class="sd">1. Association plot with SNPs colored by functional consequences</span>
+<span class="sd">2. Gene track showing gene locations and orientations</span>
+<span class="sd">3. LD heatmap showing correlation patterns between SNPs</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cycle</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">cm</span><span class="p">,</span> <span class="n">transforms</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.patches</span><span class="w"> </span><span class="kn">import</span> <span class="n">FancyArrow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyensembl</span><span class="w"> </span><span class="kn">import</span> <span class="n">Genome</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..core.executor</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_plink</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..core.get_references</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ensembl37Fetcher</span><span class="p">,</span> <span class="n">Ensembl38Fetcher</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utilities.annotations</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotate_snp</span><span class="p">,</span> <span class="n">gtf_to_all_genes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utilities.api_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">VEPEnsemblRestClient</span>
+
+<span class="c1"># Configure logging</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> - </span><span class="si">%(levelname)s</span><span class="s2"> - </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="filter_sumstats">
+<a class="viewcode-back" href="../../../visualization_modules.html#ideal_genom.visualizations.zoom_heatmap.filter_sumstats">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">filter_sumstats</span><span class="p">(</span>
+    <span class="n">data_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">lead_snp</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">snp_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">p_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">pos_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">chr_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">pval_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5e-8</span><span class="p">,</span> 
+    <span class="n">radius</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mf">10e6</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Filter GWAS summary statistics based on a lead SNP, p-value threshold and genomic region.</span>
+<span class="sd">    </span>
+<span class="sd">    This function filters a DataFrame containing GWAS summary statistics to return variants</span>
+<span class="sd">    within a specified genomic region around a lead SNP that meet a p-value significance threshold.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_df : pandas.DataFrame</span>
+<span class="sd">        DataFrame containing GWAS summary statistics</span>
+<span class="sd">    lead_snp : str</span>
+<span class="sd">        Identifier of the lead SNP to center the region on</span>
+<span class="sd">    snp_col : str</span>
+<span class="sd">        Name of column containing SNP identifiers</span>
+<span class="sd">    p_col : str</span>
+<span class="sd">        Name of column containing p-values</span>
+<span class="sd">    pos_col : str</span>
+<span class="sd">        Name of column containing genomic positions</span>
+<span class="sd">    chr_col : str</span>
+<span class="sd">        Name of column containing chromosome numbers/identifiers</span>
+<span class="sd">    pval_threshold : float, optional</span>
+<span class="sd">        P-value significance threshold for filtering variants (default: 5e-8)</span>
+<span class="sd">    radius : float, optional</span>
+<span class="sd">        Size of region to include around lead SNP in base pairs (default: 10Mb)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        Filtered DataFrame containing only variants that:</span>
+
+<span class="sd">            - Are on the same chromosome as lead SNP</span>
+<span class="sd">            - Meet p-value threshold</span>
+<span class="sd">            - Fall within specified region around lead SNP</span>
+
+<span class="sd">        Also includes calculated -log10(p-value) column</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If input parameters are not of the expected types</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If specified columns are not found in the DataFrame</span>
+<span class="sd">        If lead SNP is not found in the DataFrame</span>
+<span class="sd">    </span>
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The function adds a &#39;log10p&#39; column containing -log10 transformed p-values</span>
+<span class="sd">    to the filtered DataFrame before returning it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_df</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;data_df must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lead_snp</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;lead_snp must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">snp_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;snp_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;p_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pos_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;pos_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">chr_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;chr_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pval_threshold</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;pval_threshold must be a float.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">radius</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;radius must be a float or an integer.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">snp_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">snp_col</span><span class="si">}</span><span class="s2"> not found in the data frame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">p_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">p_col</span><span class="si">}</span><span class="s2"> not found in the data frame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pos_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">pos_col</span><span class="si">}</span><span class="s2"> not found in the data frame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">chr_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">chr_col</span><span class="si">}</span><span class="s2"> not found in the data frame.&quot;</span><span class="p">)</span>
+    
+    <span class="n">lead_snp_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">data_df</span><span class="p">[</span><span class="n">snp_col</span><span class="p">]</span><span class="o">==</span><span class="n">lead_snp</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">lead_snp_mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Lead SNP </span><span class="si">{</span><span class="n">lead_snp</span><span class="si">}</span><span class="s2"> not found in the data frame.&quot;</span><span class="p">)</span>
+
+    <span class="n">lead_chr</span> <span class="o">=</span> <span class="n">data_df</span><span class="p">[</span><span class="n">lead_snp_mask</span><span class="p">][</span><span class="n">chr_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">lead_pos</span> <span class="o">=</span> <span class="n">data_df</span><span class="p">[</span><span class="n">lead_snp_mask</span><span class="p">][</span><span class="n">pos_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">mask_chr</span> <span class="o">=</span> <span class="p">(</span><span class="n">data_df</span><span class="p">[</span><span class="n">chr_col</span><span class="p">]</span> <span class="o">==</span> <span class="n">lead_chr</span><span class="p">)</span>
+    <span class="n">mask_pval</span><span class="o">=</span> <span class="p">(</span><span class="n">data_df</span><span class="p">[</span><span class="n">p_col</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">pval_threshold</span><span class="p">)</span>
+
+    <span class="n">df_filtered</span> <span class="o">=</span> <span class="n">data_df</span><span class="p">[</span><span class="n">mask_chr</span> <span class="o">&amp;</span> <span class="n">mask_pval</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">df_filtered</span><span class="p">[</span><span class="s1">&#39;log10p&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">df_filtered</span><span class="p">[</span><span class="n">p_col</span><span class="p">])</span>
+    
+    <span class="n">upper_bound</span> <span class="o">=</span> <span class="n">lead_pos</span> <span class="o">+</span> <span class="n">radius</span>
+    <span class="n">lower_bound</span> <span class="o">=</span> <span class="n">lead_pos</span> <span class="o">-</span> <span class="n">radius</span>
+
+    <span class="n">mask_upper</span> <span class="o">=</span> <span class="p">(</span><span class="n">df_filtered</span><span class="p">[</span><span class="n">pos_col</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">upper_bound</span><span class="p">)</span>
+    <span class="n">mask_lower</span> <span class="o">=</span> <span class="p">(</span><span class="n">df_filtered</span><span class="p">[</span><span class="n">pos_col</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">lower_bound</span><span class="p">)</span>
+
+    <span class="n">df_filtered</span> <span class="o">=</span> <span class="n">df_filtered</span><span class="p">[</span><span class="n">mask_upper</span> <span class="o">&amp;</span> <span class="n">mask_lower</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>   
+
+    <span class="k">return</span> <span class="n">df_filtered</span></div>
+
+
+
+<div class="viewcode-block" id="snp_annotations">
+<a class="viewcode-back" href="../../../visualization_modules.html#ideal_genom.visualizations.zoom_heatmap.snp_annotations">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">snp_annotations</span><span class="p">(</span>
+    <span class="n">data_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">snp_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pos_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">chr_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">build</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;38&#39;</span><span class="p">,</span> 
+    <span class="n">anno_source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ensembl&#39;</span><span class="p">,</span> 
+    <span class="n">gtf_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> 
+    <span class="n">request_persec</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Annotate SNPs with gene names and functional consequences using Ensembl databases.</span>
+<span class="sd">    </span>
+<span class="sd">    This function takes a DataFrame containing SNP information and adds gene name annotations</span>
+<span class="sd">    and functional consequence annotations using Ensembl VEP (Variant Effect Predictor) API.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_df : pandas.DataFrame</span>
+<span class="sd">        Input DataFrame containing SNP information</span>
+<span class="sd">    snp_col : str</span>
+<span class="sd">        Name of column containing SNP IDs</span>
+<span class="sd">    pos_col : str </span>
+<span class="sd">        Name of column containing genomic positions</span>
+<span class="sd">    chr_col : str</span>
+<span class="sd">        Name of column containing chromosome numbers</span>
+<span class="sd">    build : str, optional</span>
+<span class="sd">        Genome build version (&#39;38&#39;, &#39;37&#39;, or &#39;19&#39;), by default &#39;38&#39;</span>
+<span class="sd">    anno_source : str, optional</span>
+<span class="sd">        Source for annotations (&#39;ensembl&#39;), by default &#39;ensembl&#39;</span>
+<span class="sd">    gtf_path : str, optional</span>
+<span class="sd">        Path to GTF file for annotations, by default None</span>
+<span class="sd">    batch_size : int, optional</span>
+<span class="sd">        Number of SNPs to process in each API request batch, by default 100</span>
+<span class="sd">    request_persec : int, optional</span>
+<span class="sd">        Maximum number of API requests per second, by default 15</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.DataFrame</span>
+<span class="sd">        Input DataFrame augmented with gene name and functional consequence annotations.</span>
+<span class="sd">        Added columns:</span>
+<span class="sd">        - GENENAME: Gene name from Ensembl</span>
+<span class="sd">        - Functional_Consequence: Most severe consequence from VEP</span>
+<span class="sd">    </span>
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If specified genome build version is not supported</span>
+<span class="sd">        If annotation source is not supported</span>
+<span class="sd">        If the specified columns are not found in the DataFrame</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If input parameters are not of the expected types</span>
+<span class="sd">    </span>
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Supports genome builds 19/37 and 38 using different Ensembl REST API endpoints.</span>
+<span class="sd">    Implements rate limiting and batch processing for API requests.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_df</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;data_df must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">snp_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;snp_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pos_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;pos_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">chr_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;chr_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">build</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;build must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">anno_source</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;anno_source must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;batch_size must be an integer.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request_persec</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;request_persec must be an integer.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">build</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;19&#39;</span><span class="p">,</span> <span class="s1">&#39;37&#39;</span><span class="p">,</span> <span class="s1">&#39;38&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported build version: </span><span class="si">{</span><span class="n">build</span><span class="si">}</span><span class="s2">. Supported versions are &#39;19&#39;, &#39;37&#39;, and &#39;38&#39;.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">anno_source</span> <span class="o">!=</span> <span class="s1">&#39;ensembl&#39;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported annotation source: </span><span class="si">{</span><span class="n">anno_source</span><span class="si">}</span><span class="s2">. Currently only &#39;ensembl&#39; is supported.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">gtf_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gtf_path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;gtf_path must be a string or None.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">snp_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">snp_col</span><span class="si">}</span><span class="s2"> not found in the data frame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pos_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">pos_col</span><span class="si">}</span><span class="s2"> not found in the data frame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">chr_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">chr_col</span><span class="si">}</span><span class="s2"> not found in the data frame.&quot;</span><span class="p">)</span>
+
+    <span class="n">variants_toanno</span> <span class="o">=</span> <span class="n">annotate_snp</span><span class="p">(</span>
+            <span class="n">insumstats</span><span class="o">=</span><span class="n">data_df</span><span class="p">,</span>
+            <span class="n">chrom</span>  <span class="o">=</span><span class="n">chr_col</span><span class="p">,</span>
+            <span class="n">pos</span>    <span class="o">=</span><span class="n">pos_col</span><span class="p">,</span>
+            <span class="n">build</span>  <span class="o">=</span><span class="n">build</span><span class="p">,</span>
+            <span class="n">source</span> <span class="o">=</span><span class="n">anno_source</span><span class="p">,</span>
+            <span class="n">gtf_path</span><span class="o">=</span><span class="n">gtf_path</span> <span class="c1"># type: ignore</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;GENE&quot;</span><span class="p">:</span><span class="s2">&quot;GENENAME&quot;</span><span class="p">})</span>
+    
+    
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; - Annotated SNPs with gene names.&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;variants_toanno shape: </span><span class="si">{</span><span class="n">variants_toanno</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;variants_toanno columns: </span><span class="si">{</span><span class="n">variants_toanno</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">build</span> <span class="o">==</span> <span class="s1">&#39;38&#39;</span><span class="p">:</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; -Assigning functional consequences using Ensembl VEP for protein coding genes for build 38&quot;</span><span class="p">)</span>
+    
+        <span class="c1"># initialize VEP client</span>
+        <span class="n">vep_client</span> <span class="o">=</span> <span class="n">VEPEnsemblRestClient</span><span class="p">(</span><span class="n">server</span><span class="o">=</span><span class="s1">&#39;https://rest.ensembl.org&#39;</span><span class="p">,</span> <span class="n">reqs_per_sec</span><span class="o">=</span><span class="n">request_persec</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; - Using Ensembl VEP API to annotate SNPs with functional consequences.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># list of IDs for the POST request</span>
+        <span class="n">snps</span> <span class="o">=</span> <span class="n">variants_toanno</span><span class="p">[</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+
+        <span class="c1"># empty DataFrame to store the VEP results</span>
+        <span class="n">df_vep</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+        <span class="c1"># iterate through the list of IDs in batches</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">snps</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">):</span>
+
+            <span class="n">batch</span> <span class="o">=</span> <span class="n">snps</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="nb">min</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">snps</span><span class="p">))]</span>
+
+            <span class="n">response</span> <span class="o">=</span> <span class="n">vep_client</span><span class="o">.</span><span class="n">post_vep_request</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">response</span><span class="p">:</span>
+                <span class="n">batch_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+                    <span class="n">snp_col</span><span class="p">:</span> <span class="p">[</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">response</span><span class="p">],</span>
+                    <span class="s1">&#39;Functional_Consequence&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;most_severe_consequence&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">response</span><span class="p">]</span>
+                <span class="p">})</span>
+                <span class="n">df_vep</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df_vep</span><span class="p">,</span> <span class="n">batch_df</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Failed to get response.&quot;</span><span class="p">)</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">build</span> <span class="o">==</span> <span class="s1">&#39;19&#39;</span> <span class="ow">or</span> <span class="n">build</span> <span class="o">==</span> <span class="s1">&#39;37&#39;</span><span class="p">:</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; -Assigning functional consequences using Ensembl VEP for protein coding genes for build 37&quot;</span><span class="p">)</span>
+
+        <span class="c1"># initialize VEP client</span>
+        <span class="n">vep_client</span> <span class="o">=</span> <span class="n">VEPEnsemblRestClient</span><span class="p">(</span><span class="n">server</span><span class="o">=</span><span class="s1">&#39;https://grch37.rest.ensembl.org&#39;</span><span class="p">,</span> <span class="n">reqs_per_sec</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+
+        <span class="c1"># list of IDs for the POST request</span>
+        <span class="n">snps</span> <span class="o">=</span> <span class="n">variants_toanno</span><span class="p">[</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+
+        <span class="c1"># empty DataFrame to store the VEP results</span>
+        <span class="n">df_vep</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+        <span class="c1"># iterate through the list of IDs in batches</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">snps</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">):</span>
+
+            <span class="n">batch</span> <span class="o">=</span> <span class="n">snps</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="nb">min</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">snps</span><span class="p">))]</span>
+
+            <span class="n">response</span> <span class="o">=</span> <span class="n">vep_client</span><span class="o">.</span><span class="n">post_vep_request</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">response</span><span class="p">:</span>
+                <span class="n">batch_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+                    <span class="n">snp_col</span><span class="p">:</span> <span class="p">[</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">response</span><span class="p">],</span>
+                    <span class="s1">&#39;Functional_Consequence&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;most_severe_consequence&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">response</span><span class="p">]</span>
+                <span class="p">})</span>
+                <span class="n">df_vep</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df_vep</span><span class="p">,</span> <span class="n">batch_df</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Failed to get response.&quot;</span><span class="p">)</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported build version: </span><span class="si">{</span><span class="n">build</span><span class="si">}</span><span class="s2">. Supported versions are &#39;19&#39;, &#39;37&#39;, and &#39;38&#39;.&quot;</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; - Finished annotating SNPs with functional consequences.&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;df_vep shape: </span><span class="si">{</span><span class="n">df_vep</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;df_vep columns: </span><span class="si">{</span><span class="n">df_vep</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="n">variants_toanno</span> <span class="o">=</span> <span class="n">variants_toanno</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">df_vep</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="n">snp_col</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">variants_toanno</span></div>
+
+
+
+<div class="viewcode-block" id="get_gene_information">
+<a class="viewcode-back" href="../../../visualization_modules.html#ideal_genom.visualizations.zoom_heatmap.get_gene_information">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_gene_information</span><span class="p">(</span>
+    <span class="n">genes</span><span class="p">:</span><span class="nb">list</span><span class="p">,</span> 
+    <span class="n">gtf_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">build</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;38&quot;</span><span class="p">,</span> 
+    <span class="n">anno_source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ensembl&#39;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieves genomic information for a list of genes using Ensembl annotation.</span>
+<span class="sd">    </span>
+<span class="sd">    This function fetches start position, end position, strand, and length information</span>
+<span class="sd">    for each gene in the provided list using either Ensembl GRCh37 or GRCh38 annotations.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    genes : list</span>
+<span class="sd">        List of gene IDs (Ensembl format)</span>
+<span class="sd">    gtf_path : str, optional</span>
+<span class="sd">        Path to a custom GTF file. If None, will download and use Ensembl GTF.</span>
+<span class="sd">    build : str, default &quot;38&quot;</span>
+<span class="sd">        Human genome build version. Supported values: &quot;19&quot;, &quot;37&quot;, &quot;38&quot;</span>
+<span class="sd">        Note: &quot;19&quot; and &quot;37&quot; are equivalent.</span>
+<span class="sd">    anno_source : str, default &quot;ensembl&quot;</span>
+<span class="sd">        Source of genome annotations. Currently only supports &quot;ensembl&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        DataFrame containing gene information with columns:</span>
+<span class="sd">            - gene: gene ID</span>
+<span class="sd">            - start: gene start position</span>
+<span class="sd">            - end: gene end position</span>
+<span class="sd">            - strand: gene strand</span>
+<span class="sd">            - length: gene length</span>
+<span class="sd">    </span>
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If unsupported build version or annotation source is provided</span>
+<span class="sd">    FileNotFoundError</span>
+<span class="sd">        If provided GTF file path does not exist</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If provided GTF path is not a string</span>
+<span class="sd">    </span>
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    When gtf_path is None, the function will automatically download and process</span>
+<span class="sd">    the appropriate Ensembl GTF file based on the specified build version.</span>
+<span class="sd">    The function uses the Ensembl Python API to fetch gene information.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">anno_source</span> <span class="o">==</span> <span class="s2">&quot;ensembl&quot;</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">build</span><span class="o">==</span><span class="s2">&quot;19&quot;</span> <span class="ow">or</span> <span class="n">build</span><span class="o">==</span><span class="s2">&quot;37&quot;</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; -Assigning Gene name using ensembl_hg37_gtf for protein coding genes&quot;</span><span class="p">)</span>
+  
+            <span class="k">if</span> <span class="n">gtf_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="n">nsmbl37</span> <span class="o">=</span> <span class="n">Ensembl37Fetcher</span><span class="p">()</span>
+
+                <span class="n">nsmbl37</span><span class="o">.</span><span class="n">get_latest_release</span><span class="p">()</span>
+                <span class="n">nsmbl37</span><span class="o">.</span><span class="n">download_latest</span><span class="p">()</span>
+                <span class="n">nsmbl37</span><span class="o">.</span><span class="n">unzip_latest</span><span class="p">()</span>
+                <span class="n">nsmbl37</span><span class="o">.</span><span class="n">get_all_genes</span><span class="p">()</span>
+
+                <span class="n">gtf_path</span> <span class="o">=</span> <span class="n">nsmbl37</span><span class="o">.</span><span class="n">gtf_file</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">gtf_path</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Provided GTF path </span><span class="si">{</span><span class="n">gtf_path</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gtf_path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Provided GTF path </span><span class="si">{</span><span class="n">gtf_path</span><span class="si">}</span><span class="s2"> is not a string.&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; -Using user-provided gtf:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">gtf_path</span><span class="p">))</span>
+                
+                <span class="n">gtf_path</span> <span class="o">=</span> <span class="n">gtf_to_all_genes</span><span class="p">(</span><span class="n">gtf_path</span><span class="p">)</span>
+
+            <span class="n">gtf_db_path</span> <span class="o">=</span> <span class="n">gtf_path</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="s2">&quot;db&quot;</span> <span class="c1"># type: ignore</span>
+            
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">Genome</span><span class="p">(</span>
+                    <span class="n">reference_name</span><span class="o">=</span><span class="s1">&#39;GRCh38&#39;</span><span class="p">,</span>
+                    <span class="n">annotation_name</span><span class="o">=</span><span class="s1">&#39;Ensembl&#39;</span><span class="p">,</span>
+                    <span class="n">gtf_path_or_url</span><span class="o">=</span><span class="n">gtf_path</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error initializing Genome with GTF path </span><span class="si">{</span><span class="n">gtf_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span>
+
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">gtf_db_path</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+
+                <span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="p">()</span>
+        
+        <span class="k">elif</span> <span class="n">build</span><span class="o">==</span><span class="s2">&quot;38&quot;</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; -Assigning Gene name using ensembl_hg38_gtf for protein coding genes&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">gtf_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="n">nsmbl38</span> <span class="o">=</span> <span class="n">Ensembl38Fetcher</span><span class="p">()</span> 
+
+                <span class="n">nsmbl38</span><span class="o">.</span><span class="n">get_latest_release</span><span class="p">()</span>
+                <span class="n">nsmbl38</span><span class="o">.</span><span class="n">download_latest</span><span class="p">()</span>
+                <span class="n">nsmbl38</span><span class="o">.</span><span class="n">unzip_latest</span><span class="p">()</span>
+                <span class="n">nsmbl38</span><span class="o">.</span><span class="n">get_all_genes</span><span class="p">()</span>
+
+                <span class="n">gtf_path</span> <span class="o">=</span> <span class="n">nsmbl38</span><span class="o">.</span><span class="n">all_genes_path</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; -Using user-provided gtf:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">gtf_path</span><span class="p">))</span>
+                <span class="n">gtf_path</span> <span class="o">=</span> <span class="n">gtf_to_all_genes</span><span class="p">(</span><span class="n">gtf_path</span><span class="p">)</span>
+            
+            <span class="n">gtf_db_path</span> <span class="o">=</span> <span class="n">gtf_path</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="s2">&quot;db&quot;</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">Genome</span><span class="p">(</span>
+                    <span class="n">reference_name</span><span class="o">=</span><span class="s1">&#39;GRCh38&#39;</span><span class="p">,</span>
+                    <span class="n">annotation_name</span><span class="o">=</span><span class="s1">&#39;Ensembl&#39;</span><span class="p">,</span>
+                    <span class="n">gtf_path_or_url</span><span class="o">=</span><span class="n">gtf_path</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error initializing Genome with GTF path </span><span class="si">{</span><span class="n">gtf_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported build version: </span><span class="si">{</span><span class="n">build</span><span class="si">}</span><span class="s2">. Supported versions are &#39;19&#39;, &#39;37&#39;, and &#39;38&#39;.&quot;</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported annotation source: </span><span class="si">{</span><span class="n">anno_source</span><span class="si">}</span><span class="s2">. Supported sources are &#39;ensembl&#39;.&quot;</span><span class="p">)</span>
+    
+    <span class="n">gene_info</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;gene&#39;</span><span class="p">:</span><span class="n">genes</span><span class="p">,</span>
+        <span class="s1">&#39;start&#39;</span><span class="p">:[],</span>
+        <span class="s1">&#39;end&#39;</span><span class="p">:[],</span>
+        <span class="s1">&#39;strand&#39;</span><span class="p">:[],</span>
+        <span class="s1">&#39;length&#39;</span><span class="p">:[]</span>
+    <span class="p">}</span>
+
+    <span class="k">for</span> <span class="n">gene</span> <span class="ow">in</span> <span class="n">gene_info</span><span class="p">[</span><span class="s1">&#39;gene&#39;</span><span class="p">]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">gene_info</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">gene_by_id</span><span class="p">(</span><span class="n">gene</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+            <span class="n">gene_info</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">gene_by_id</span><span class="p">(</span><span class="n">gene</span><span class="p">)</span><span class="o">.</span><span class="n">end</span><span class="p">)</span>
+            <span class="n">gene_info</span><span class="p">[</span><span class="s1">&#39;strand&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">gene_by_id</span><span class="p">(</span><span class="n">gene</span><span class="p">)</span><span class="o">.</span><span class="n">strand</span><span class="p">)</span>
+            <span class="n">gene_info</span><span class="p">[</span><span class="s1">&#39;length&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">gene_by_id</span><span class="p">(</span><span class="n">gene</span><span class="p">)</span><span class="o">.</span><span class="n">length</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">gene_info</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">gene_info</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">gene_info</span><span class="p">[</span><span class="s1">&#39;strand&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">gene_info</span><span class="p">[</span><span class="s1">&#39;length&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+    
+
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">gene_info</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_ld_matrix">
+<a class="viewcode-back" href="../../../visualization_modules.html#ideal_genom.visualizations.zoom_heatmap.get_ld_matrix">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_ld_matrix</span><span class="p">(</span>
+    <span class="n">data_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">snp_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">pos_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">bfile_folder</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">bfile_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate LD matrix using PLINK for a set of SNPs.</span>
+<span class="sd">    </span>
+<span class="sd">    This function takes a DataFrame containing SNP information and calculates the LD (Linkage Disequilibrium)</span>
+<span class="sd">    matrix using PLINK. The SNPs are first sorted by position, and then PLINK is used to compute</span>
+<span class="sd">    pairwise r2 values between SNPs.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_df : pandas.DataFrame </span>
+<span class="sd">        DataFrame containing SNP information</span>
+<span class="sd">    snp_col : str </span>
+<span class="sd">        Name of the column containing SNP IDs</span>
+<span class="sd">    pos_col : str </span>
+<span class="sd">        Name of the column containing SNP positions</span>
+<span class="sd">    bfile_folder : str </span>
+<span class="sd">        Path to the folder containing PLINK binary files</span>
+<span class="sd">    bfile_name : str </span>
+<span class="sd">        Base name of the PLINK binary files (without extensions)</span>
+<span class="sd">    output_path : str </span>
+<span class="sd">        Path where output files will be saved</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict </span>
+<span class="sd">        Dictionary containing:</span>
+<span class="sd">            - &#39;pass&#39; : bool </span>
+<span class="sd">                True if process completed successfully</span>
+<span class="sd">            - &#39;step&#39; : str </span>
+<span class="sd">                Name of the processing step (&#39;get_ld_matrix&#39;)</span>
+<span class="sd">            - &#39;output&#39; : dict </span>
+<span class="sd">                Dictionary with output file paths</span>
+<span class="sd">    </span>
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    FileNotFoundError </span>
+<span class="sd">        If any required files or directories are not found</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If input parameters are not of the expected types</span>
+<span class="sd">    ValueError </span>
+<span class="sd">        If specified columns are not found in the DataFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2"> not found.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">bfile_folder</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File </span><span class="si">{</span><span class="n">bfile_folder</span><span class="si">}</span><span class="s2"> not found.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bfile_folder</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bfile_name</span><span class="si">}</span><span class="s2">.bim&quot;</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File </span><span class="si">{</span><span class="n">bfile_name</span><span class="si">}</span><span class="s2">.bim not found in </span><span class="si">{</span><span class="n">bfile_folder</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bfile_folder</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bfile_name</span><span class="si">}</span><span class="s2">.bed&quot;</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File </span><span class="si">{</span><span class="n">bfile_name</span><span class="si">}</span><span class="s2">.bed not found in </span><span class="si">{</span><span class="n">bfile_folder</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bfile_folder</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bfile_name</span><span class="si">}</span><span class="s2">.fam&quot;</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File </span><span class="si">{</span><span class="n">bfile_name</span><span class="si">}</span><span class="s2">.fam not found in </span><span class="si">{</span><span class="n">bfile_folder</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_df</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;data_df must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">snp_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;snp_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pos_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;pos_col must be a string.&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">snp_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">snp_col</span><span class="si">}</span><span class="s2"> not found in the data frame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pos_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">pos_col</span><span class="si">}</span><span class="s2"> not found in the data frame.&quot;</span><span class="p">)</span>
+    
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; - Calculating LD matrix using PLINK.&quot;</span><span class="p">)</span>
+
+    <span class="n">bfile_folder_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">bfile_folder</span><span class="p">)</span>
+
+    <span class="n">sorted_data</span> <span class="o">=</span> <span class="n">data_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="n">pos_col</span><span class="p">],</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">sorted_data</span><span class="p">[[</span><span class="n">snp_col</span><span class="p">]]</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bfile_folder</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bfile_name</span><span class="si">}</span><span class="s2">-snplist.txt&quot;</span><span class="p">),</span>
+        <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># plink command</span>
+    <span class="n">plink_cmd</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;--bfile&quot;</span><span class="p">,</span> <span class="n">bfile_folder_path</span> <span class="o">/</span> <span class="n">bfile_name</span><span class="p">,</span>
+        <span class="s2">&quot;--extract&quot;</span><span class="p">,</span> <span class="n">bfile_folder_path</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bfile_name</span><span class="si">}</span><span class="s2">-snplist.txt&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--r2&quot;</span><span class="p">,</span> <span class="s2">&quot;square&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;--out&quot;</span><span class="p">,</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;matrix-ld&quot;</span>
+    <span class="p">]</span>
+
+    <span class="n">run_plink</span><span class="p">(</span><span class="n">plink_cmd</span><span class="p">)</span>
+        
+    <span class="k">return</span></div>
+
+
+<div class="viewcode-block" id="get_zoomed_data">
+<a class="viewcode-back" href="../../../visualization_modules.html#ideal_genom.visualizations.zoom_heatmap.get_zoomed_data">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_zoomed_data</span><span class="p">(</span>
+    <span class="n">data_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">lead_snp</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">snp_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">p_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">pos_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">chr_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">output_folder</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">pval_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5e-6</span><span class="p">,</span> 
+    <span class="n">radius</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e6</span><span class="p">,</span> 
+    <span class="n">build</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;38&#39;</span><span class="p">,</span> 
+    <span class="n">anno_source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;ensembl&#39;</span><span class="p">,</span> 
+    <span class="n">gtf_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> 
+    <span class="n">request_persec</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Filter and annotate SNP data around a lead SNP within a specified radius.</span>
+<span class="sd">    </span>
+<span class="sd">    This function filters significant SNPs in a region around a lead SNP and annotates them with gene</span>
+<span class="sd">    names and functional consequences. The position values are scaled to Megabase pairs (Mbp).</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_df : pandas.DataFrame</span>
+<span class="sd">        Input DataFrame containing SNP data</span>
+<span class="sd">    lead_snp : str</span>
+<span class="sd">        Identifier of the lead SNP to center the region around</span>
+<span class="sd">    snp_col : str</span>
+<span class="sd">        Name of the column containing SNP identifiers</span>
+<span class="sd">    p_col : str</span>
+<span class="sd">        Name of the column containing p-values</span>
+<span class="sd">    pos_col : str</span>
+<span class="sd">        Name of the column containing position information</span>
+<span class="sd">    chr_col : str</span>
+<span class="sd">        Name of the column containing chromosome information</span>
+<span class="sd">    output_folder : str</span>
+<span class="sd">        Path to the output folder (must exist)</span>
+<span class="sd">    pval_threshold : float, optional</span>
+<span class="sd">        P-value threshold for significance filtering (default: 5e-6)</span>
+<span class="sd">    radius : Union[float, int], optional</span>
+<span class="sd">        Radius around the lead SNP in base pairs (default: 1e6)</span>
+<span class="sd">    build : str, optional</span>
+<span class="sd">        Genome build version (&#39;38&#39; or &#39;37&#39;) (default: &#39;38&#39;)</span>
+<span class="sd">    anno_source : str, optional</span>
+<span class="sd">        Source for annotations (&#39;ensembl&#39; or other supported sources) (default: &#39;ensembl&#39;)</span>
+<span class="sd">    gtf_path : str, optional</span>
+<span class="sd">        Path to GTF file for annotations (default: None)</span>
+<span class="sd">    batch_size : int, optional</span>
+<span class="sd">        Number of SNPs to process in each batch (default: 100)</span>
+<span class="sd">    request_persec : int, optional</span>
+<span class="sd">        Number of API requests per second allowed (default: 15)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        Filtered and annotated DataFrame with added Mbp column and removed duplicates</span>
+<span class="sd">    </span>
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If input parameters are not of the expected types</span>
+<span class="sd">    FileNotFoundError</span>
+<span class="sd">        If `output_folder` does not exist</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If no significant SNPs are found in the specified region</span>
+<span class="sd">    </span>
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The function removes duplicate SNPs, keeping the first occurrence only.</span>
+<span class="sd">    Position values are converted to Megabase pairs in the output DataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_df</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;data_df must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lead_snp</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;lead_snp must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">snp_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;snp_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;p_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pos_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;pos_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">chr_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;chr_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pval_threshold</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;pval_threshold must be a float.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">radius</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">radius</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;radius must be a float or an integer.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">output_folder</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Folder </span><span class="si">{</span><span class="n">output_folder</span><span class="si">}</span><span class="s2"> not found.&quot;</span><span class="p">)</span>
+    
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; - Filtering data for lead SNP: </span><span class="si">{</span><span class="n">lead_snp</span><span class="si">}</span><span class="s2"> in region of radius </span><span class="si">{</span><span class="n">radius</span><span class="si">}</span><span class="s2"> around the lead SNP.&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># filter significant SNPs in the specified region</span>
+    <span class="n">filtered_df</span> <span class="o">=</span> <span class="n">filter_sumstats</span><span class="p">(</span>
+        <span class="n">data_df</span>       <span class="o">=</span><span class="n">data_df</span><span class="p">,</span> 
+        <span class="n">lead_snp</span>      <span class="o">=</span><span class="n">lead_snp</span><span class="p">,</span> 
+        <span class="n">snp_col</span>       <span class="o">=</span><span class="n">snp_col</span><span class="p">,</span> 
+        <span class="n">p_col</span>         <span class="o">=</span><span class="n">p_col</span><span class="p">,</span> 
+        <span class="n">pos_col</span>       <span class="o">=</span><span class="n">pos_col</span><span class="p">,</span> 
+        <span class="n">chr_col</span>       <span class="o">=</span><span class="n">chr_col</span><span class="p">,</span> 
+        <span class="n">pval_threshold</span><span class="o">=</span><span class="n">pval_threshold</span><span class="p">,</span> 
+        <span class="n">radius</span>        <span class="o">=</span><span class="n">radius</span>
+    <span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; - Filtered data shape: </span><span class="si">{</span><span class="n">filtered_df</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; - Filtered data columns: </span><span class="si">{</span><span class="n">filtered_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">filtered_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No significant SNPs found in the specified region.&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># annotate the SNPs with gene names and functional consequences</span>
+    <span class="n">annotated</span> <span class="o">=</span> <span class="n">snp_annotations</span><span class="p">(</span>
+        <span class="n">data_df</span>       <span class="o">=</span><span class="n">filtered_df</span><span class="p">,</span> 
+        <span class="n">snp_col</span>       <span class="o">=</span><span class="n">snp_col</span><span class="p">,</span> 
+        <span class="n">chr_col</span>       <span class="o">=</span><span class="n">chr_col</span><span class="p">,</span> 
+        <span class="n">pos_col</span>       <span class="o">=</span><span class="n">pos_col</span><span class="p">,</span>
+        <span class="n">build</span>         <span class="o">=</span><span class="n">build</span><span class="p">,</span>
+        <span class="n">batch_size</span>    <span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+        <span class="n">request_persec</span><span class="o">=</span><span class="n">request_persec</span><span class="p">,</span>
+        <span class="n">anno_source</span>   <span class="o">=</span><span class="n">anno_source</span><span class="p">,</span>
+        <span class="n">gtf_path</span>      <span class="o">=</span><span class="n">gtf_path</span>
+    <span class="p">)</span>
+
+    <span class="c1"># scale the position to Mbp</span>
+    <span class="n">annotated</span><span class="p">[</span><span class="s1">&#39;Mbp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">annotated</span><span class="p">[</span><span class="s1">&#39;POS&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1e6</span>
+
+    <span class="n">annotated</span> <span class="o">=</span> <span class="n">annotated</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">(</span><span class="n">keep</span><span class="o">=</span><span class="s1">&#39;first&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">annotated</span> <span class="o">=</span> <span class="n">annotated</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="n">snp_col</span><span class="p">],</span> <span class="n">keep</span><span class="o">=</span><span class="s1">&#39;first&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">annotated</span></div>
+
+
+
+<div class="viewcode-block" id="draw_zoomed_heatmap">
+<a class="viewcode-back" href="../../../visualization_modules.html#ideal_genom.visualizations.zoom_heatmap.draw_zoomed_heatmap">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">draw_zoomed_heatmap</span><span class="p">(</span>
+    <span class="n">data_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+    <span class="n">lead_snp</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">snp_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">p_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">pos_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">chr_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">output_folder</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">bfile_folder</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">bfile_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">pval_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5e-6</span><span class="p">,</span> 
+    <span class="n">radius</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e6</span><span class="p">,</span> 
+    <span class="n">build</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span><span class="s1">&#39;38&#39;</span><span class="p">,</span> 
+    <span class="n">gtf_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">anno_source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ensembl&quot;</span><span class="p">,</span> 
+    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> 
+    <span class="n">effect_dict</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(),</span> 
+    <span class="n">extension</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;pdf&#39;</span><span class="p">,</span> 
+    <span class="n">request_persec</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span>    
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a zoomed heatmap visualization around a lead SNP showing LD patterns and gene annotations.</span>
+<span class="sd">    </span>
+<span class="sd">    This function generates a three-panel plot:</span>
+<span class="sd">    1. Association plot with SNPs colored by functional consequences</span>
+<span class="sd">    2. Gene track showing gene locations and orientations</span>
+<span class="sd">    3. LD heatmap showing correlation patterns between SNPs</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_df : pandas.DataFrame</span>
+<span class="sd">        Input DataFrame containing GWAS summary statistics</span>
+<span class="sd">    lead_snp : str</span>
+<span class="sd">        Identifier of the lead SNP to center the plot around</span>
+<span class="sd">    snp_col : str</span>
+<span class="sd">        Column name containing SNP identifiers</span>
+<span class="sd">    p_col : str </span>
+<span class="sd">        Column name containing p-values</span>
+<span class="sd">    pos_col : str</span>
+<span class="sd">        Column name containing genomic positions</span>
+<span class="sd">    chr_col : str</span>
+<span class="sd">        Column name containing chromosome numbers</span>
+<span class="sd">    output_folder : str</span>
+<span class="sd">        Path to save output files</span>
+<span class="sd">    bfile_folder : str</span>
+<span class="sd">        Folder containing PLINK binary files</span>
+<span class="sd">    bfile_name : str</span>
+<span class="sd">        Base name of PLINK binary files (without extensions)</span>
+<span class="sd">    pval_threshold : float, optional</span>
+<span class="sd">        P-value threshold for significance, default 5e-6</span>
+<span class="sd">    radius : Union[int, float], optional</span>
+<span class="sd">        Distance in base pairs to plot around lead SNP, default 1e6</span>
+<span class="sd">    build : str, optional</span>
+<span class="sd">        Genome build version, default &#39;38&#39;</span>
+<span class="sd">    gtf_path : str, optional</span>
+<span class="sd">        Path to custom GTF file, default None</span>
+<span class="sd">    anno_source : str, optional</span>
+<span class="sd">        Source for gene annotations (&#39;ensembl&#39; or &#39;refseq&#39;), default &#39;ensembl&#39;</span>
+<span class="sd">    batch_size : int, optional</span>
+<span class="sd">        Batch size for API requests, default 100</span>
+<span class="sd">    effect_dict : dict, optional</span>
+<span class="sd">        Dictionary mapping functional effects to display names, default empty dict</span>
+<span class="sd">    extension : str, optional</span>
+<span class="sd">        File extension for output plot, default &#39;pdf&#39;</span>
+<span class="sd">    request_persec : int, optional</span>
+<span class="sd">        Number of API requests per second allowed, default 15</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if plot was generated successfully</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If input parameters are not of the expected types</span>
+<span class="sd">    FileNotFoundError</span>
+<span class="sd">        If specified folders or PLINK binary files do not exist</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If the required columns are not found in the DataFrame</span>
+<span class="sd">    </span>
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Required input DataFrame must contain columns for SNP IDs, p-values, positions and chromosomes.</span>
+<span class="sd">    PLINK binary files (.bed, .bim, .fam) must exist in specified folder.</span>
+<span class="sd">    Generates and saves a zoomed heatmap plot in the specified output folder.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_df</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;data_df must be a pandas DataFrame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lead_snp</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;lead_snp must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">snp_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;snp_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;p_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pos_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;pos_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">chr_col</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;chr_col must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;output_folder must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bfile_folder</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;bfile_folder must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bfile_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;bfile_name must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pval_threshold</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;pval_threshold must be a float.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">radius</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;radius must be a float or an integer.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">build</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;build must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gtf_path</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;gtf_path must be a string or None.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">anno_source</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;anno_source must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;batch_size must be an integer.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">effect_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;effect_dict must be a dictionary.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">extension</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;extension must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request_persec</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;request_persec must be an integer.&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">output_folder</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output folder </span><span class="si">{</span><span class="n">output_folder</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">bfile_folder</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;PLINK binary folder </span><span class="si">{</span><span class="n">bfile_folder</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bfile_folder</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bfile_name</span><span class="si">}</span><span class="s2">.bim&quot;</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;PLINK binary file </span><span class="si">{</span><span class="n">bfile_name</span><span class="si">}</span><span class="s2">.bim not found in </span><span class="si">{</span><span class="n">bfile_folder</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bfile_folder</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bfile_name</span><span class="si">}</span><span class="s2">.bed&quot;</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;PLINK binary file </span><span class="si">{</span><span class="n">bfile_name</span><span class="si">}</span><span class="s2">.bed not found in </span><span class="si">{</span><span class="n">bfile_folder</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bfile_folder</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bfile_name</span><span class="si">}</span><span class="s2">.fam&quot;</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;PLINK binary file </span><span class="si">{</span><span class="n">bfile_name</span><span class="si">}</span><span class="s2">.fam not found in </span><span class="si">{</span><span class="n">bfile_folder</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">snp_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">snp_col</span><span class="si">}</span><span class="s2"> not found in the data frame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">p_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">p_col</span><span class="si">}</span><span class="s2"> not found in the data frame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pos_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">pos_col</span><span class="si">}</span><span class="s2"> not found in the data frame.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">chr_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">chr_col</span><span class="si">}</span><span class="s2"> not found in the data frame.&quot;</span><span class="p">)</span>
+
+    <span class="n">annotated</span> <span class="o">=</span> <span class="n">get_zoomed_data</span><span class="p">(</span>
+        <span class="n">data_df</span>       <span class="o">=</span><span class="n">data_df</span><span class="p">,</span>
+        <span class="n">lead_snp</span>      <span class="o">=</span><span class="n">lead_snp</span><span class="p">,</span> 
+        <span class="n">snp_col</span>       <span class="o">=</span><span class="n">snp_col</span><span class="p">,</span> 
+        <span class="n">p_col</span>         <span class="o">=</span><span class="n">p_col</span><span class="p">,</span> 
+        <span class="n">pos_col</span>       <span class="o">=</span><span class="n">pos_col</span><span class="p">,</span> 
+        <span class="n">chr_col</span>       <span class="o">=</span><span class="n">chr_col</span><span class="p">,</span>
+        <span class="n">output_folder</span> <span class="o">=</span><span class="n">output_folder</span><span class="p">,</span>
+        <span class="n">pval_threshold</span><span class="o">=</span><span class="n">pval_threshold</span><span class="p">,</span> 
+        <span class="n">radius</span>        <span class="o">=</span><span class="n">radius</span><span class="p">,</span>
+        <span class="n">batch_size</span>    <span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+        <span class="n">request_persec</span><span class="o">=</span><span class="n">request_persec</span><span class="p">,</span>
+        <span class="n">build</span>         <span class="o">=</span><span class="n">build</span><span class="p">,</span>
+        <span class="n">gtf_path</span>      <span class="o">=</span><span class="n">gtf_path</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; - Annotated data shape: </span><span class="si">{</span><span class="n">annotated</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">annotated</span><span class="p">[</span><span class="s1">&#39;GENENAME&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">annotated</span><span class="p">[</span><span class="s1">&#39;GENENAME&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">effects</span> <span class="o">=</span> <span class="n">annotated</span><span class="p">[</span><span class="s1">&#39;Functional_Consequence&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">(</span><span class="n">dropna</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+
+    <span class="n">region</span> <span class="o">=</span> <span class="p">(</span><span class="n">annotated</span><span class="p">[</span><span class="s1">&#39;Mbp&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">annotated</span><span class="p">[</span><span class="s1">&#39;Mbp&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">+</span> <span class="mf">0.05</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; - Region for zoom plot: </span><span class="si">{</span><span class="n">region</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; - Lead SNP: </span><span class="si">{</span><span class="n">lead_snp</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; - Number of SNPs in the region: </span><span class="si">{</span><span class="n">annotated</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">genes</span> <span class="o">=</span> <span class="n">get_gene_information</span><span class="p">(</span>
+        <span class="n">genes</span>   <span class="o">=</span><span class="n">annotated</span><span class="p">[</span><span class="s1">&#39;GENENAME&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+        <span class="n">gtf_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">build</span>   <span class="o">=</span><span class="s1">&#39;38&#39;</span><span class="p">,</span>
+        <span class="n">anno_source</span><span class="o">=</span><span class="n">anno_source</span>
+    <span class="p">)</span>
+    <span class="n">genes</span><span class="p">[</span><span class="s1">&#39;start_esc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">genes</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">1e6</span>
+    <span class="n">genes</span><span class="p">[</span><span class="s1">&#39;end_esc&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="n">genes</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">1e6</span>
+
+    <span class="n">genes</span><span class="p">[</span><span class="s1">&#39;start_esc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">genes</span><span class="p">[</span><span class="s1">&#39;start_esc&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">region</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">genes</span><span class="p">[</span><span class="s1">&#39;end_esc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">genes</span><span class="p">[</span><span class="s1">&#39;end_esc&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">region</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    
+    <span class="n">genes</span><span class="p">[</span><span class="s1">&#39;length_esc&#39;</span><span class="p">]</span><span class="o">=</span> <span class="n">genes</span><span class="p">[</span><span class="s1">&#39;end_esc&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">genes</span><span class="p">[</span><span class="s1">&#39;start_esc&#39;</span><span class="p">]</span>
+
+    <span class="n">annotated</span> <span class="o">=</span> <span class="n">annotated</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">genes</span><span class="p">,</span> <span class="n">left_on</span><span class="o">=</span><span class="s1">&#39;GENENAME&#39;</span><span class="p">,</span> <span class="n">right_on</span><span class="o">=</span><span class="s1">&#39;gene&#39;</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)</span>
+    <span class="n">annotated</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;zoom_plot_data_for_</span><span class="si">{</span><span class="n">lead_snp</span><span class="si">}</span><span class="s1">.csv&#39;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="n">get_ld_matrix</span><span class="p">(</span>
+        <span class="n">data_df</span>     <span class="o">=</span><span class="n">annotated</span><span class="p">,</span>
+        <span class="n">snp_col</span>     <span class="o">=</span><span class="n">snp_col</span><span class="p">,</span>
+        <span class="n">pos_col</span>     <span class="o">=</span><span class="n">pos_col</span><span class="p">,</span>
+        <span class="n">bfile_folder</span><span class="o">=</span><span class="n">bfile_folder</span><span class="p">,</span>
+        <span class="n">bfile_name</span>  <span class="o">=</span><span class="n">bfile_name</span><span class="p">,</span>
+        <span class="n">output_path</span> <span class="o">=</span><span class="n">output_folder</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">df_LD</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span> <span class="s1">&#39;matrix-ld.ld&#39;</span><span class="p">),</span>
+        <span class="n">sep</span>      <span class="o">=</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span>
+        <span class="n">header</span>   <span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">index_col</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">engine</span>   <span class="o">=</span><span class="s1">&#39;python&#39;</span>
+    <span class="p">)</span>
+    <span class="n">ld</span> <span class="o">=</span> <span class="n">df_LD</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="c1"># plot the heatmap</span>
+
+    <span class="n">N</span><span class="o">=</span><span class="n">ld</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ld</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tril</span><span class="p">(</span><span class="n">ld</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">ldm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_where</span><span class="p">(</span><span class="n">ld</span><span class="o">==</span><span class="mi">0</span><span class="p">,</span> <span class="n">ld</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+
+    <span class="c1"># Define the overall grid size (9 rows, 1 column)</span>
+    <span class="n">ax1</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot2grid</span><span class="p">((</span><span class="mi">9</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">rowspan</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>  <span class="c1"># Top plot (4 rows)</span>
+    <span class="n">ax2</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot2grid</span><span class="p">((</span><span class="mi">9</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">rowspan</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Middle plot (1 row)</span>
+    <span class="n">ax3</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot2grid</span><span class="p">((</span><span class="mi">9</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">rowspan</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>  <span class="c1"># Bottom plot (4 rows)</span>
+
+    <span class="c1"># Define custom colors</span>
+    <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;#1f77b4&quot;</span><span class="p">,</span>  <span class="c1"># Blue</span>
+        <span class="s2">&quot;#ff7f0e&quot;</span><span class="p">,</span>  <span class="c1"># Orange</span>
+        <span class="s2">&quot;#2ca02c&quot;</span><span class="p">,</span>  <span class="c1"># Green</span>
+        <span class="s2">&quot;#9467bd&quot;</span><span class="p">,</span>  <span class="c1"># Purple</span>
+        <span class="s2">&quot;#8c564b&quot;</span><span class="p">,</span>  <span class="c1"># Brown</span>
+        <span class="s2">&quot;#17becf&quot;</span><span class="p">,</span>  <span class="c1"># Cyan</span>
+        <span class="s2">&quot;#bcbd22&quot;</span><span class="p">,</span>  <span class="c1"># Yellow</span>
+        <span class="s2">&quot;#e377c2&quot;</span>   <span class="c1"># Pink</span>
+    <span class="p">]</span>
+
+    <span class="c1"># Plot for ax1</span>
+
+    <span class="n">annotated</span><span class="p">[</span><span class="s1">&#39;Hue&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;other&#39;</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">effect_dict</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+
+        <span class="n">main_effects</span> <span class="o">=</span> <span class="n">effects</span><span class="p">[</span><span class="s1">&#39;Functional_Consequence&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">effect</span> <span class="ow">in</span> <span class="n">main_effects</span><span class="p">:</span>
+
+            <span class="n">annotated</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">annotated</span><span class="p">[</span><span class="s1">&#39;Functional_Consequence&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">effect</span><span class="p">,</span> <span class="s1">&#39;Hue&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">effect</span>
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="k">for</span> <span class="n">effect</span> <span class="ow">in</span> <span class="n">effect_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+
+            <span class="n">annotated</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">annotated</span><span class="p">[</span><span class="s1">&#39;Functional_Consequence&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">effect</span><span class="p">,</span> <span class="s1">&#39;Hue&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">effect_dict</span><span class="p">[</span><span class="n">effect</span><span class="p">]</span>
+
+    <span class="c1"># plot other SNPs</span>
+    <span class="n">others</span> <span class="o">=</span> <span class="n">annotated</span><span class="p">[</span><span class="n">annotated</span><span class="p">[</span><span class="s1">&#39;Hue&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;other&#39;</span><span class="p">]</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">others</span><span class="p">[</span><span class="s1">&#39;Mbp&#39;</span><span class="p">],</span> <span class="n">others</span><span class="p">[</span><span class="s1">&#39;log10p&#39;</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">edgecolors</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">)</span>
+
+    <span class="c1"># plot main effects</span>
+    <span class="n">main</span> <span class="o">=</span> <span class="n">annotated</span><span class="p">[(</span><span class="n">annotated</span><span class="p">[</span><span class="s1">&#39;Hue&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;other&#39;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">annotated</span><span class="p">[</span><span class="s1">&#39;Hue&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;Lead Variant&#39;</span><span class="p">)]</span>
+
+    <span class="n">annotated_lead</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">lead</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+    
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">effect</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">main</span><span class="p">[</span><span class="s1">&#39;Hue&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()):</span>
+        <span class="n">subset</span> <span class="o">=</span> <span class="n">main</span><span class="p">[</span><span class="n">main</span><span class="p">[</span><span class="s1">&#39;Hue&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">effect</span><span class="p">]</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">subset</span><span class="p">[</span><span class="s1">&#39;Mbp&#39;</span><span class="p">],</span> <span class="n">subset</span><span class="p">[</span><span class="s1">&#39;log10p&#39;</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">effect</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">lead_snp</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">[</span><span class="n">snp_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">:</span> <span class="c1"># plot lead SNP</span>
+            <span class="n">annotated_lead</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">lead</span> <span class="o">=</span> <span class="n">subset</span><span class="p">[</span><span class="n">subset</span><span class="p">[</span><span class="n">snp_col</span><span class="p">]</span> <span class="o">==</span> <span class="n">lead_snp</span><span class="p">]</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">lead</span><span class="p">[</span><span class="s1">&#39;Mbp&#39;</span><span class="p">],</span> <span class="n">lead</span><span class="p">[</span><span class="s1">&#39;log10p&#39;</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Lead SNP&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;d&#39;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">annotated_lead</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="n">lead</span> <span class="o">=</span> <span class="n">annotated</span><span class="p">[</span><span class="n">annotated</span><span class="p">[</span><span class="n">snp_col</span><span class="p">]</span> <span class="o">==</span> <span class="n">lead_snp</span><span class="p">]</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">lead</span><span class="p">[</span><span class="s1">&#39;Mbp&#39;</span><span class="p">],</span> <span class="n">lead</span><span class="p">[</span><span class="s1">&#39;log10p&#39;</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Lead SNP&#39;</span><span class="o">+</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">lead</span><span class="p">[</span><span class="s2">&quot;Functional_Consequence&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;d&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">lead</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Lead SNP </span><span class="si">{</span><span class="n">lead_snp</span><span class="si">}</span><span class="s2"> not found in the data.&quot;</span><span class="p">)</span>
+   
+    <span class="nb">chr</span> <span class="o">=</span> <span class="n">lead</span><span class="p">[</span><span class="n">chr_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_ticks_position</span><span class="p">(</span><span class="s1">&#39;top&#39;</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Zoom of </span><span class="si">{</span><span class="n">lead_snp</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;log10(P)&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_label_position</span><span class="p">(</span><span class="s1">&#39;top&#39;</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Position on Chr </span><span class="si">{</span><span class="nb">chr</span><span class="si">}</span><span class="s1"> [Mb]&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+
+    <span class="c1"># Plot for ax2</span>
+    <span class="n">ys</span> <span class="o">=</span> <span class="n">cycle</span><span class="p">([</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">genes</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+        <span class="n">symbol</span><span class="p">,</span> <span class="n">strand</span> <span class="o">=</span> <span class="n">genes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;gene&#39;</span><span class="p">],</span> <span class="n">genes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;strand&#39;</span><span class="p">]</span>
+        <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="n">genes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;start_esc&#39;</span><span class="p">],</span> <span class="n">genes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;end_esc&#39;</span><span class="p">],</span> <span class="n">genes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;length_esc&#39;</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">ys</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">symbol</span> <span class="o">==</span> <span class="n">lead</span><span class="p">[</span><span class="s1">&#39;GENENAME&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;red&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span>
+
+        <span class="k">if</span> <span class="n">strand</span> <span class="o">==</span> <span class="s1">&#39;+&#39;</span><span class="p">:</span>
+            <span class="n">arrow</span> <span class="o">=</span> <span class="n">FancyArrow</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">head_width</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">head_length</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span> <span class="c1"># type: ignore</span>
+            <span class="n">ax2</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">arrow</span><span class="p">)</span>
+            <span class="n">ax2</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">length</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">symbol</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span> <span class="c1"># type: ignore</span>
+        <span class="k">elif</span> <span class="n">strand</span> <span class="o">==</span> <span class="s1">&#39;-&#39;</span><span class="p">:</span>
+            <span class="n">arrow_neg</span> <span class="o">=</span> <span class="n">FancyArrow</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">-</span><span class="n">length</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">head_width</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">head_length</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">)</span> <span class="c1"># type: ignore</span>
+            <span class="n">ax2</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">arrow_neg</span><span class="p">)</span>
+            <span class="n">ax2</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">length</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">symbol</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span> <span class="c1"># type: ignore</span>
+
+    <span class="n">ax2</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+    <span class="n">base</span> <span class="o">=</span> <span class="n">ax3</span><span class="o">.</span><span class="n">transData</span> <span class="c1"># to rotate triangle</span>
+    <span class="n">rotation</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Affine2D</span><span class="p">()</span><span class="o">.</span><span class="n">rotate_deg</span><span class="p">(</span><span class="mi">180</span><span class="o">+</span><span class="mi">90</span><span class="o">+</span><span class="mi">45</span><span class="p">)</span>
+    <span class="n">cmap</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s1">&#39;Reds&#39;</span><span class="p">)</span>
+    <span class="n">im</span><span class="o">=</span><span class="n">ax3</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">ldm</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">rotation</span><span class="o">+</span><span class="n">base</span><span class="p">,</span><span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">)</span>
+    <span class="n">ax3</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mf">1.41</span><span class="o">*</span><span class="n">N</span><span class="p">))</span>
+    <span class="n">ax3</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="mi">1</span><span class="o">*</span><span class="n">N</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">ax3</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Add a colorbar as the legend</span>
+    <span class="n">cbar</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax3</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;horizontal&#39;</span><span class="p">,</span> <span class="n">fraction</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+    <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="s1">&#39;LD Value&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># Adjust label as needed</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;Zoom for </span><span class="si">{</span><span class="n">lead_snp</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">extension</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Luis Giraldo González, Amabel Tenghe.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

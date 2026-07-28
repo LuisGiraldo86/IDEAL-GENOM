@@ -18,7 +18,7 @@ IDEAL-GENOM uses a modern, flexible pipeline system:
 The New Configuration System
 -----------------------------
 
-IDEAL-GENOM v0.2.0 introduces a **YAML-based configuration system** that replaces the previous JSON approach. Benefits include:
+IDEAL-GENOM uses a **YAML-based configuration system** (introduced in v0.2.0) that replaces the previous JSON approach. Benefits include:
 
 - **Single File**: All settings in one place (no more separate parameters.json, paths.json, steps.json)
 - **Hierarchical Structure**: Clear organization of pipeline steps and parameters
@@ -480,7 +480,7 @@ For more control, use the Python API directly:
         input_name="mydata",
         output_path=Path("/data/output"),
         output_name="mydata_sampleQCed",
-        high_ld_regions_file="auto",
+        high_ld_regions_file=Path("auto"),  # nonexistent path -> triggers built-in fetch
         build="38"
     )
     

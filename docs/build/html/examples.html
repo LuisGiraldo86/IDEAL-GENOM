@@ -6,16 +6,16 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Examples &mdash; IDEAL-GENOM v1.1.0</title>
+  <title>Examples &mdash; IDEAL-GENOM v1.2.0</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=fc837d61"></script>
-      <script src="_static/doctools.js?v=fd6eb6e6"></script>
-      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/documentation_options.js?v=6efca38a"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -142,10 +142,8 @@
 <span class="w">        </span><span class="nt">input_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;gwas_data&quot;</span>
 <span class="w">        </span><span class="nt">output_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${base_output_dir}/sample_qc&quot;</span>
 <span class="w">        </span><span class="nt">output_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sample_clean&quot;</span>
-<span class="w">        </span><span class="nt">reference_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data/1000genomes_build_38&quot;</span>
-<span class="w">        </span><span class="nt">reference_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1kG_phase3_GRCh38&quot;</span>
-<span class="w">        </span><span class="nt">built</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;38&quot;</span>
-<span class="w">        </span><span class="nt">recompute</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">        </span><span class="nt">high_ld_regions_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;auto&quot;</span>
+<span class="w">        </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;38&quot;</span>
 <span class="w">      </span><span class="nt">execute_params</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">rename_snp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">        </span><span class="nt">hh_to_missing</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
@@ -168,9 +166,8 @@
 <span class="w">        </span><span class="nt">input_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${steps.sample_qc.output_name}&quot;</span>
 <span class="w">        </span><span class="nt">output_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${base_output_dir}/ancestry_qc&quot;</span>
 <span class="w">        </span><span class="nt">output_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ancestry_clean&quot;</span>
-<span class="w">        </span><span class="nt">reference_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data/1000genomes_build_38&quot;</span>
-<span class="w">        </span><span class="nt">reference_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1kG_phase3_GRCh38&quot;</span>
-<span class="w">        </span><span class="nt">built</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;38&quot;</span>
+<span class="w">        </span><span class="nt">high_ld_regions_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;auto&quot;</span>
+<span class="w">        </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;38&quot;</span>
 <span class="w">      </span><span class="nt">execute_params</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">ind_pair</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">50</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.2</span><span class="p p-Indicator">]</span>
 <span class="w">        </span><span class="nt">pca</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
@@ -387,9 +384,8 @@ ideal-genom<span class="w"> </span>run<span class="w"> </span>--config<span clas
 <span class="w">        </span><span class="nt">input_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;qc_passed&quot;</span>
 <span class="w">        </span><span class="nt">output_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${base_output_dir}/ancestry&quot;</span>
 <span class="w">        </span><span class="nt">output_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ancestry_results&quot;</span>
-<span class="w">        </span><span class="nt">reference_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data/1000genomes_build_38&quot;</span>
-<span class="w">        </span><span class="nt">reference_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1kG_phase3_GRCh38&quot;</span>
-<span class="w">        </span><span class="nt">built</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;38&quot;</span>
+<span class="w">        </span><span class="nt">high_ld_regions_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;auto&quot;</span>
+<span class="w">        </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;38&quot;</span>
 <span class="w">      </span><span class="nt">execute_params</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">ind_pair</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">50</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.2</span><span class="p p-Indicator">]</span>
 <span class="w">        </span><span class="nt">pca</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
@@ -448,6 +444,7 @@ ideal-genom<span class="w"> </span>run<span class="w"> </span>--config<span clas
     <span class="n">input_name</span><span class="o">=</span><span class="s2">&quot;genotype_data&quot;</span><span class="p">,</span>
     <span class="n">output_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/data/output/sample_qc&quot;</span><span class="p">),</span>
     <span class="n">output_name</span><span class="o">=</span><span class="s2">&quot;sample_clean&quot;</span><span class="p">,</span>
+    <span class="n">high_ld_regions_file</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/data/high_ld_regions.txt&quot;</span><span class="p">),</span>
     <span class="n">build</span><span class="o">=</span><span class="s2">&quot;38&quot;</span>
 <span class="p">)</span>
 
@@ -460,7 +457,8 @@ ideal-genom<span class="w"> </span>run<span class="w"> </span>--config<span clas
     <span class="s2">&quot;sex_check&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">],</span>
     <span class="s2">&quot;maf&quot;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
     <span class="s2">&quot;het_deviation&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
-    <span class="s2">&quot;kinship&quot;</span><span class="p">:</span> <span class="mf">0.354</span>
+    <span class="s2">&quot;kinship&quot;</span><span class="p">:</span> <span class="mf">0.354</span><span class="p">,</span>
+    <span class="s2">&quot;ibd_threshold&quot;</span><span class="p">:</span> <span class="mf">0.185</span>
 <span class="p">})</span>
 
 <span class="c1"># Step 2: Ancestry QC</span>
@@ -469,7 +467,7 @@ ideal-genom<span class="w"> </span>run<span class="w"> </span>--config<span clas
     <span class="n">input_name</span><span class="o">=</span><span class="s2">&quot;sample_clean&quot;</span><span class="p">,</span>
     <span class="n">output_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/data/output/ancestry_qc&quot;</span><span class="p">),</span>
     <span class="n">output_name</span><span class="o">=</span><span class="s2">&quot;ancestry_clean&quot;</span><span class="p">,</span>
-    <span class="n">reference_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;data/1000genomes_build_38&quot;</span><span class="p">),</span>
+    <span class="n">high_ld_regions_file</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/data/high_ld_regions.txt&quot;</span><span class="p">),</span>
     <span class="n">build</span><span class="o">=</span><span class="s2">&quot;38&quot;</span>
 <span class="p">)</span>
 

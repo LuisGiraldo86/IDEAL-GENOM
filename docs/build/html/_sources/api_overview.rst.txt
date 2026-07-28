@@ -60,10 +60,9 @@ Common Imports
    from ideal_genom.population.projection import DimensionalityReductionPipeline
    
    # Visualization modules
-   from ideal_genom.visualizations.manhattan_type import manhattan, miami
-   from ideal_genom.visualizations.plots import qqplot_draw, beta_beta_plot
-   from ideal_genom.visualizations.plots import trumpet_plot_binary, trumpet_plot_quantitative
-   from ideal_genom.visualizations.zoom_heatmap import create_zoom_heatmap
+   from ideal_genom.visualizations.manhattan_type import manhattan_draw, miami_draw
+   from ideal_genom.visualizations.plots import qqplot_draw, beta_beta_draw, trumpet_draw
+   from ideal_genom.visualizations.zoom_heatmap import draw_zoomed_heatmap
    
    # Core framework
    from ideal_genom.core.config import load_config
@@ -78,28 +77,31 @@ All analysis classes follow a consistent pattern:
 
    from pathlib import Path
    from ideal_genom.qc.sample_qc import SampleQC
-   
+
    # 1. Initialize the class with input/output paths
    qc = SampleQC(
        input_path=Path("data/input"),
        input_name="study_data",
        output_path=Path("data/output"),
        output_name="qc_clean",
-       reference_path=Path("data/1000genomes_build_38"),
-       reference_name="1kG_phase3_GRCh38",
-       built="38"
+       high_ld_regions_file=Path("data/high_ld_regions.txt"),
+       build="38"
    )
-   
+
    # 2. Execute the analysis with parameters
-   qc.run_sample_qc(
-       rename_snp=True,
-       mind=0.1,
-       maf=0.01,
-       het_deviation=3,
-       use_kinship=True,
-       kinship=0.354
-   )
-   
+   qc.execute_sample_qc_pipeline(sample_params={
+       "rename_snp": True,
+       "hh_to_missing": True,
+       "ind_pair": [50, 5, 0.2],
+       "mind": 0.1,
+       "sex_check": [0.2, 0.8],
+       "maf": 0.01,
+       "het_deviation": 3,
+       "use_kinship": True,
+       "kinship": 0.354,
+       "ibd_threshold": 0.185
+   })
+
    # 3. Access results
    print(f"Output files at: {qc.output_path}")
 
@@ -114,7 +116,7 @@ Classes can be used directly via Python API or integrated into YAML pipeline con
 
    # Instantiate and run directly
    sample_qc = SampleQC(...)
-   sample_qc.run_sample_qc(...)
+   sample_qc.execute_sample_qc_pipeline(sample_params={...})
 
 **YAML Pipeline (Declarative Configuration):**
 

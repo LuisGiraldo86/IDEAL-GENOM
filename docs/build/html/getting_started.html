@@ -6,16 +6,16 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Getting Started &mdash; IDEAL-GENOM v1.1.0</title>
+  <title>Getting Started &mdash; IDEAL-GENOM v1.2.0</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=fc837d61"></script>
-      <script src="_static/doctools.js?v=fd6eb6e6"></script>
-      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/documentation_options.js?v=6efca38a"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -126,7 +126,7 @@
 </section>
 <section id="the-new-configuration-system">
 <h2>The New Configuration System<a class="headerlink" href="#the-new-configuration-system" title="Link to this heading"></a></h2>
-<p>IDEAL-GENOM v0.2.0 introduces a <strong>YAML-based configuration system</strong> that replaces the previous JSON approach. Benefits include:</p>
+<p>IDEAL-GENOM uses a <strong>YAML-based configuration system</strong> (introduced in v0.2.0) that replaces the previous JSON approach. Benefits include:</p>
 <ul class="simple">
 <li><p><strong>Single File</strong>: All settings in one place (no more separate parameters.json, paths.json, steps.json)</p></li>
 <li><p><strong>Hierarchical Structure</strong>: Clear organization of pipeline steps and parameters</p></li>
@@ -530,7 +530,7 @@ Enabled Steps:
     <span class="n">input_name</span><span class="o">=</span><span class="s2">&quot;mydata&quot;</span><span class="p">,</span>
     <span class="n">output_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/data/output&quot;</span><span class="p">),</span>
     <span class="n">output_name</span><span class="o">=</span><span class="s2">&quot;mydata_sampleQCed&quot;</span><span class="p">,</span>
-    <span class="n">high_ld_regions_file</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+    <span class="n">high_ld_regions_file</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;auto&quot;</span><span class="p">),</span>  <span class="c1"># nonexistent path -&gt; triggers built-in fetch</span>
     <span class="n">build</span><span class="o">=</span><span class="s2">&quot;38&quot;</span>
 <span class="p">)</span>
 

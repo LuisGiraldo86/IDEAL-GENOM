@@ -23,7 +23,7 @@ IDEAL-GENOM Documentation
 
 **IDEAL-GENOM** is a comprehensive Python package for automated, reproducible analysis of human genotype data. It provides end-to-end pipelines for genomic quality control (QC), post-imputation VCF processing, and genome-wide association studies (GWAS). The package wraps years of research expertise from CGE Tübingen, integrating PLINK 1.9/2.0, GCTA, and BCFtools with rich reporting and visualizations.
 
-Version: **1.1.0**
+Version: **1.2.0**
 
 🎯 Key Features
 ---------------
@@ -180,7 +180,7 @@ If you use IDEAL-GENOM in your research, please cite:
      title = {IDEAL-GENOM: Comprehensive Genomic Analysis Pipeline},
      author = {Giraldo González, Luis and Tenghe, Amabel},
      year = {2026},
-     version = {0.2.0},
+     version = {1.2.0},
      url = {https://github.com/cge-tubingens/ideal-genom-qc}
    }
 

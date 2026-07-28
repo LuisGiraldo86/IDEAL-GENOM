@@ -13,8 +13,8 @@
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="../../../_static/documentation_options.js?v=fc837d61"></script>
-      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
-      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -486,8 +486,7 @@
         <span class="c1"># load .vmiss file for male subjects</span>
         <span class="n">df_males</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
             <span class="n">filename_male</span><span class="p">,</span>
-            <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\s+&quot;</span><span class="p">,</span>
-            <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span>
+            <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\s+&quot;</span>
         <span class="p">)</span>
         
         <span class="c1">## filter male subjects</span>
@@ -498,8 +497,7 @@
         <span class="c1"># load .vmiss file for female subjects</span>
         <span class="n">df_females</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
             <span class="n">filename_female</span><span class="p">,</span>
-            <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\s+&quot;</span><span class="p">,</span>
-            <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span>
+            <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\s+&quot;</span>
         <span class="p">)</span>
         
         <span class="c1">## filter female subjects</span>
@@ -542,8 +540,7 @@
         <span class="c1"># load .missing file</span>
         <span class="n">df_diffmiss</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
             <span class="n">filename</span><span class="p">,</span>
-            <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\s+&quot;</span><span class="p">,</span>
-            <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span>
+            <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\s+&quot;</span>
         <span class="p">)</span>
 
         <span class="c1"># filter markers with different genotype call rate</span>
@@ -737,8 +734,7 @@
         <span class="c1"># load .vmiss file for male subjects</span>
         <span class="n">df_males</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
             <span class="n">missing_data_rate_male</span><span class="p">,</span>
-            <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\s+&quot;</span><span class="p">,</span>
-            <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span>
+            <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\s+&quot;</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_make_histogram</span><span class="p">(</span>
@@ -754,8 +750,7 @@
         <span class="c1"># load .vmiss file for female subjects</span>
         <span class="n">df_females</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
             <span class="n">missing_data_rate_female</span><span class="p">,</span>
-            <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\s+&quot;</span><span class="p">,</span>
-            <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span>
+            <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\s+&quot;</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_make_histogram</span><span class="p">(</span>

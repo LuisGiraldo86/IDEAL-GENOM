@@ -13,8 +13,8 @@
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="../../../_static/documentation_options.js?v=fc837d61"></script>
-      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
-      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -109,8 +109,10 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Calculate optimal thread count for genomic analysis operations.</span>
 <span class="sd">    </span>
-<span class="sd">    Determines the number of threads to use based on available CPU cores,</span>
-<span class="sd">    reserving some cores for system operations with robust fallback handling.</span>
+<span class="sd">    Determines the number of threads to use based on the CPU cores actually</span>
+<span class="sd">    schedulable by this process (respecting affinity restrictions from</span>
+<span class="sd">    taskset/cpuset cgroups/SLURM allocations where available), reserving</span>
+<span class="sd">    some cores for system operations with robust fallback handling.</span>
 <span class="sd">    </span>
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -141,19 +143,36 @@
     
     <span class="c1"># Try multiple methods to get CPU count</span>
     <span class="n">cpu_count</span> <span class="o">=</span> <span class="kc">None</span>
-    
-    <span class="c1"># Method 1: os.cpu_count() - preferred</span>
+
+    <span class="c1"># Method 1: os.sched_getaffinity() - preferred, respects CPU affinity</span>
+    <span class="c1"># restrictions (taskset, cpuset cgroups, SLURM/PBS allocations on a</span>
+    <span class="c1"># shared node). os.cpu_count() ignores these and reports the total</span>
+    <span class="c1"># cores on the machine, which can lead to requesting far more PLINK</span>
+    <span class="c1"># threads than the process can actually schedule on.</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">cpu_count</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span>
+        <span class="n">cpu_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sched_getaffinity</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">cpu_count</span> <span class="ow">and</span> <span class="n">cpu_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CPU count from os.cpu_count(): </span><span class="si">{</span><span class="n">cpu_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CPU count from os.sched_getaffinity(0): </span><span class="si">{</span><span class="n">cpu_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">cpu_count</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get CPU count from os.cpu_count(): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">NotImplementedError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># Not available on non-Linux platforms (e.g. macOS, Windows)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;os.sched_getaffinity() unavailable: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="n">cpu_count</span> <span class="o">=</span> <span class="kc">None</span>
-    
-    <span class="c1"># Method 2: psutil fallback</span>
+
+    <span class="c1"># Method 2: os.cpu_count() fallback</span>
+    <span class="k">if</span> <span class="n">cpu_count</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cpu_count</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">cpu_count</span> <span class="ow">and</span> <span class="n">cpu_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CPU count from os.cpu_count(): </span><span class="si">{</span><span class="n">cpu_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cpu_count</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get CPU count from os.cpu_count(): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">cpu_count</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Method 3: psutil fallback</span>
     <span class="k">if</span> <span class="n">cpu_count</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">cpu_count</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">(</span><span class="n">logical</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -179,6 +198,45 @@
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Calculated optimal threads: </span><span class="si">{</span><span class="n">optimal</span><span class="si">}</span><span class="s2"> (CPU: </span><span class="si">{</span><span class="n">cpu_count</span><span class="si">}</span><span class="s2">, reserve: </span><span class="si">{</span><span class="n">reserve</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">optimal</span></div>
 
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_cgroup_available_memory_mb</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get memory actually available under a cgroup limit (Docker --memory,</span>
+<span class="sd">    Kubernetes memory limits, SLURM --mem allocations), in MB.</span>
+
+<span class="sd">    psutil.virtual_memory() reads host-wide /proc/meminfo and has no notion</span>
+<span class="sd">    of cgroup memory limits, so inside a container/job restricted to less</span>
+<span class="sd">    memory than the host it silently over-reports what&#39;s usable. Returns</span>
+<span class="sd">    None if no cgroup limit is set (or cgroup files aren&#39;t readable), in</span>
+<span class="sd">    which case the host-wide psutil figures are the correct source.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># cgroup v2</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">max_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;/sys/fs/cgroup/memory.max&#39;</span><span class="p">)</span>
+        <span class="n">current_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;/sys/fs/cgroup/memory.current&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">max_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span> <span class="ow">and</span> <span class="n">current_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+            <span class="n">raw_limit</span> <span class="o">=</span> <span class="n">max_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">raw_limit</span> <span class="o">!=</span> <span class="s1">&#39;max&#39;</span><span class="p">:</span>
+                <span class="n">limit_bytes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">raw_limit</span><span class="p">)</span>
+                <span class="n">current_bytes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">current_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="n">limit_bytes</span> <span class="o">-</span> <span class="n">current_bytes</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">))</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not read cgroup v2 memory limit: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># cgroup v1</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">limit_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;/sys/fs/cgroup/memory/memory.limit_in_bytes&#39;</span><span class="p">)</span>
+        <span class="n">usage_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;/sys/fs/cgroup/memory/memory.usage_in_bytes&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">limit_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span> <span class="ow">and</span> <span class="n">usage_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+            <span class="n">limit_bytes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">limit_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="c1"># cgroup v1 uses a very large sentinel value for &quot;no limit&quot;</span>
+            <span class="k">if</span> <span class="n">limit_bytes</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">62</span><span class="p">):</span>
+                <span class="n">usage_bytes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">usage_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="n">limit_bytes</span> <span class="o">-</span> <span class="n">usage_bytes</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">))</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not read cgroup v1 memory limit: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="get_available_memory">
 <a class="viewcode-back" href="../../../Helpers.html#ideal_genom.core.utils.get_available_memory">[docs]</a>
@@ -241,7 +299,15 @@
         <span class="n">used_mb</span> <span class="o">=</span> <span class="n">memory_info</span><span class="o">.</span><span class="n">used</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span>
         
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;System memory - Total: </span><span class="si">{</span><span class="n">total_mb</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">MB, Available: </span><span class="si">{</span><span class="n">available_mb</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">MB, Used: </span><span class="si">{</span><span class="n">used_mb</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">MB&quot;</span><span class="p">)</span>
-        
+
+        <span class="c1"># Cap by cgroup limit if this process is running under one (Docker</span>
+        <span class="c1"># --memory, Kubernetes limits, SLURM --mem) — psutil only sees the</span>
+        <span class="c1"># host-wide figures above.</span>
+        <span class="n">cgroup_available_mb</span> <span class="o">=</span> <span class="n">_get_cgroup_available_memory_mb</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">cgroup_available_mb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">cgroup_available_mb</span> <span class="o">&lt;</span> <span class="n">available_mb</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Capping available memory to cgroup limit: </span><span class="si">{</span><span class="n">cgroup_available_mb</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">MB (host-wide: </span><span class="si">{</span><span class="n">available_mb</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">MB)&quot;</span><span class="p">)</span>
+            <span class="n">available_mb</span> <span class="o">=</span> <span class="n">cgroup_available_mb</span>
+
         <span class="c1"># Calculate usable memory after safety buffer</span>
         <span class="n">usable_memory_mb</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">available_mb</span> <span class="o">-</span> <span class="n">safety_buffer_mb</span><span class="p">)</span>
         

@@ -196,7 +196,9 @@ Performs individual-level quality control:
 - **input_name** (string): PLINK file prefix (e.g., "mydata" for mydata.bed)
 - **output_path** (string): Where to save QC results
 - **output_name** (string): Prefix for output files
-- **high_ld_regions_file** (string): Path to high-LD regions file, or "auto" to use built-in
+- **high_ld_regions_file** (string): Path to high-LD regions file, or any nonexistent path
+  such as "auto" — there's no literal sentinel check; a path that doesn't resolve to a file
+  simply triggers automatic download of the built-in regions for the given ``build``
 - **build** (string): Genome build version - "37" (GRCh37/hg19) or "38" (GRCh38/hg38)
 
 **execute_params:**
@@ -393,8 +395,6 @@ Logging Settings
     settings:
       logging:
         level: "INFO"              # Logging verbosity
-        file_logging: true         # Write to log file
-        console_logging: true      # Print to console
 
 **level** (string): Log message detail level
 
@@ -403,29 +403,23 @@ Logging Settings
 - "WARNING": Only warnings and errors
 - "ERROR": Only errors
 
-**file_logging** (bool): Save logs to ``pipeline.log`` in output directory
+.. note::
 
-**console_logging** (bool): Print log messages to terminal
+    ``settings.logging.level`` is the only logging setting actually read
+    (by the ``ideal-genom run`` CLI command, which can also be overridden
+    with ``--log-level``). Keys like ``file_logging`` or
+    ``console_logging`` are not implemented and have no effect if present
+    in a config file.
 
 Resource Settings
 ^^^^^^^^^^^^^^^^^
 
-.. code-block:: yaml
-
-    settings:
-      resources:
-        max_memory: null           # Maximum memory in MB
-        max_threads: null          # Maximum CPU threads
-
-**max_memory** (int or null): Maximum memory allocation in MB
-
-- ``null``: Auto-detect (uses 2/3 of available RAM)
-- Explicit value: Set specific limit (e.g., 32000 for 32GB)
-
-**max_threads** (int or null): Maximum CPU threads to use
-
-- ``null``: Auto-detect (uses available cores - 2)
-- Explicit value: Set specific number
+Thread and memory usage for PLINK/GCTA subprocess calls is always sized
+automatically from host resources (see ``core/utils.py``'s
+``get_optimal_threads()``/``get_available_memory()``). There is currently
+no ``settings.resources`` key that overrides this — a ``max_memory`` or
+``max_threads`` entry under ``settings`` is accepted by the YAML parser
+but silently ignored by the pipeline executor.
 
 File Management Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -435,20 +429,18 @@ File Management Settings
     settings:
       files:
         keep_intermediate: true    # Preserve temporary files
-        compress_outputs: false    # Compress output files
-        overwrite_existing: false  # Overwrite existing results
 
 **keep_intermediate** (bool): Keep temporary intermediate files
 
 - ``true``: Keep all files (useful for debugging)
 - ``false``: Clean up after each step (saves disk space)
 
-**compress_outputs** (bool): Compress output files with gzip
+.. note::
 
-**overwrite_existing** (bool): Overwrite existing output files
-
-- ``true``: Overwrite without asking
-- ``false``: Fail if outputs exist (safer)
+    ``keep_intermediate`` is the only key under ``settings.files`` that is
+    actually consumed by ``PipelineExecutor``. ``compress_outputs`` and
+    ``overwrite_existing`` are not implemented and have no effect if
+    present in a config file.
 
 Report Generation Settings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
