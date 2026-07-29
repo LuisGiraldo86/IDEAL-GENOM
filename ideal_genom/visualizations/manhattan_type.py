@@ -16,6 +16,7 @@ import warnings
 from typing import Optional
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -1180,6 +1181,8 @@ def brisbane_draw(
     mean_line_color: str = 'red',
     median_line_color: str = 'red',
     yaxis_margin: float = 2,
+    ytick_step: Optional[float] = 1,
+    figsize: tuple = (15, 6),
     dpi: int = 400
 ) -> bool:
 
@@ -1220,6 +1223,13 @@ def brisbane_draw(
         Color of the median-density line.
     yaxis_margin : float, default=2
         Additional margin added to the y-axis maximum.
+    ytick_step : float, optional
+        Spacing between y-axis ticks. Defaults to 1 (a tick at every integer density value).
+        Pass None to fall back to matplotlib's automatic tick placement, or a larger value
+        to space ticks further apart.
+    figsize : tuple, default=(15, 6)
+        Figure size (width, height) in inches. Reduce the height to bring y-axis ticks
+        physically closer together without changing their values (a more compact plot).
     dpi : int, default=400
         Resolution of the saved image in dots per inch.
 
@@ -1259,7 +1269,7 @@ def brisbane_draw(
 
     max_x_axis = density['rel_pos'].max()
 
-    fig = plt.figure(figsize=(15, 6))
+    fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
 
     ax = sns.scatterplot(
@@ -1279,6 +1289,9 @@ def brisbane_draw(
 
     ax.set_xlim(0, max_x_axis + 1000)
     ax.set_ylim(0, plot_data['max_count'] + yaxis_margin)
+
+    if ytick_step is not None:
+        ax.yaxis.set_major_locator(mticker.MultipleLocator(ytick_step))
 
     x_ticks = plot_data['axis']['center'].tolist()
     x_labels = plot_data['axis'][chr_col].astype(str).tolist()
