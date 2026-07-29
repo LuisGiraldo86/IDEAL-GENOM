@@ -1,7 +1,7 @@
-"""Generate Manhattan and Miami plots for genome-wide association studies (GWAS).
+"""Generate Manhattan, Miami and Brisbane plots for genome-wide association studies (GWAS).
 
-This module provides functions to create Manhattan and Miami plots to visualize
-the significance of genetic variants across the genome.
+This module provides functions to create Manhattan, Miami and Brisbane plots to visualize
+the significance and density of genetic variants across the genome.
 
 Features:
 - Data processing and visualization of GWAS summary statistics.
@@ -28,6 +28,47 @@ from ..utilities.annotations import annotate_snp
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+_NON_AUTOSOME_ORDER = {'X': 23, 'Y': 24, 'XY': 25, 'MT': 26, 'M': 26}
+
+
+def _chromosome_sort_key(chrom) -> tuple:
+    """Map a chromosome label to a sort key reflecting standard genomic order (1-22, X, Y, XY, MT/M).
+
+    Accepts ints, numeric strings, and labels with an optional leading 'chr' (case-insensitive).
+    Unrecognized labels sort after all known chromosomes, ordered alphabetically among themselves.
+    """
+
+    label = str(chrom).strip()
+    if label.lower().startswith('chr'):
+        label = label[3:]
+    label_upper = label.upper()
+
+    if label_upper in _NON_AUTOSOME_ORDER:
+        return (0, _NON_AUTOSOME_ORDER[label_upper], '')
+
+    try:
+        return (0, int(label), '')
+    except ValueError:
+        return (1, 0, label_upper)
+
+
+def _compute_chr_offsets(data: pd.DataFrame, chr_col: str, pos_col: str) -> pd.DataFrame:
+    """Compute, per chromosome, the cumulative genomic offset in standard genomic order.
+
+    Returns a DataFrame with columns [chr_col, 'cumulativechrlength'], where
+    'cumulativechrlength' is the sum of the lengths of all chromosomes ordered before it
+    (1-22, X, Y, XY, MT/M, then anything unrecognized alphabetically).
+    """
+
+    chr_grouped = data.groupby(chr_col).agg(chrlength=(pos_col, 'max')).reset_index()
+    chr_grouped = chr_grouped.sort_values(
+        by=chr_col, key=lambda s: s.map(_chromosome_sort_key)
+    ).reset_index(drop=True)
+
+    chr_grouped['cumulativechrlength'] = chr_grouped['chrlength'].cumsum() - chr_grouped['chrlength']
+
+    return chr_grouped[[chr_col, 'cumulativechrlength']]
 
 
 def compute_relative_pos(
@@ -72,17 +113,15 @@ def compute_relative_pos(
     if p_col not in data.columns:
         raise ValueError(f"Column '{p_col}' not found in the input DataFrame.")
 
-    # Group by chromosome and compute chromosome size
-    chr_grouped = data.groupby(chr_col).agg(chrlength=(pos_col, 'max')).reset_index()
+    # Compute per-chromosome cumulative offsets in genomic order (not lexicographic,
+    # which would e.g. place chr10 before chr2), and merge back onto the original data
+    chr_offsets = _compute_chr_offsets(data, chr_col=chr_col, pos_col=pos_col)
+    data = pd.merge(data, chr_offsets, on=chr_col)
 
-    # Calculate cumulative chromosome length
-    chr_grouped['cumulativechrlength'] = chr_grouped['chrlength'].cumsum() - chr_grouped['chrlength']
-
-    # Merge cumulative chromosome length back to the original data
-    data = pd.merge(data, chr_grouped[[chr_col, 'cumulativechrlength']], on=chr_col)
-
-    # Sort by chromosome and position
-    data = data.sort_values(by=[chr_col, pos_col])
+    # Sort by chromosome (genomic order) and position
+    data = data.sort_values(
+        by=[chr_col, pos_col], key=lambda s: s.map(_chromosome_sort_key) if s.name == chr_col else s
+    )
 
     # Add the relative position of the probe/snp
     data['rel_pos'] = data[pos_col] + data['cumulativechrlength']
@@ -135,16 +174,12 @@ def find_chromosomes_center(
     if chr_pos_col not in data.columns:
         raise ValueError(f"Column '{chr_pos_col}' not found in the input DataFrame.")
 
-    chromosomes = data[chr_col].unique()
-
-    axis_center = pd.DataFrame(columns=[chr_col, 'center'])
-
-    for i, chrom in enumerate(chromosomes):
-
-        temp = data[data[chr_col] == chrom].reset_index(drop=True)
-
-        axis_center.loc[i, chr_col] = chrom
-        axis_center.loc[i, 'center'] = np.round((temp[chr_pos_col].max()+temp[chr_pos_col].min())/2,0)
+    axis_center = (
+        data.groupby(chr_col)[chr_pos_col]
+        .agg(lambda s: np.round((s.max() + s.min()) / 2, 0))
+        .rename('center')
+        .reset_index()
+    )
 
     return axis_center
 
@@ -316,20 +351,6 @@ def manhattan_draw(
 
     if not isinstance(data_df, pd.DataFrame):
         raise TypeError("Input data must be a pandas DataFrame.")
-    if chr_col not in data_df.columns:
-        raise ValueError(f"Column '{chr_col}' not found in the input DataFrame.")
-    if pos_col not in data_df.columns:
-        raise ValueError(f"Column '{pos_col}' not found in the input DataFrame.")
-    if p_col not in data_df.columns:
-        raise ValueError(f"Column '{p_col}' not found in the input DataFrame.")
-    
-    if to_highlight is not None:
-        if not isinstance(to_highlight, pd.DataFrame):
-            raise TypeError("to_highlight must be a list of SNP identifiers.")
-    if to_annotate is not None:
-        if not isinstance(to_annotate, pd.DataFrame):
-            raise TypeError("to_annotate must be a data frame of SNP identifiers.")
-    
     if snp_col not in data_df.columns:
         raise ValueError(f"Column '{snp_col}' not found in the input DataFrame.")
     if chr_col not in data_df.columns:
@@ -338,6 +359,13 @@ def manhattan_draw(
         raise ValueError(f"Column '{pos_col}' not found in the input DataFrame.")
     if p_col not in data_df.columns:
         raise ValueError(f"Column '{p_col}' not found in the input DataFrame.")
+
+    if to_highlight is not None:
+        if not isinstance(to_highlight, pd.DataFrame):
+            raise TypeError("to_highlight must be a list of SNP identifiers.")
+    if to_annotate is not None:
+        if not isinstance(to_annotate, pd.DataFrame):
+            raise TypeError("to_annotate must be a data frame of SNP identifiers.")
     if not isinstance(upper_cap, (type(None), float, int)):
         raise TypeError("upper_cap must be a float or None.")
     
@@ -623,15 +651,9 @@ def manhattan_type_annotate(
     
     x_lines_coor = np.linspace(0, max_x_axis, 1000).tolist() # list with a grid of x-coordinates for the lines
     
-    texts = []  # a list to store text annotations for adjustment
-    x = []      # a list to store x-coordinates for adjustment
-    y = []      # a list to store y-coordinates for adjustment
-
-    for i, row in variants_toanno.iterrows():
-
-        x.append(row['rel_pos'])
-        y.append(row['log10p'])
-        texts.append(row['GENENAME'])
+    x = variants_toanno['rel_pos'].tolist()      # x-coordinates for adjustment
+    y = variants_toanno['log10p'].tolist()        # y-coordinates for adjustment
+    texts = variants_toanno['GENENAME'].tolist()  # text annotations for adjustment
 
     allocate = ta.allocate(
             axes,            
@@ -1062,6 +1084,237 @@ def miami_draw(
     
     # save ad show the plot
     plt.savefig(os.path.join(plots_dir, save_name), dpi=dpi)
+    plt.show()
+
+    return True
+
+def brisbane_process_data(
+    data_df: pd.DataFrame,
+    chr_col: str = 'CHR',
+    pos_col: str = 'POS',
+    window_kb: float = 100
+) -> dict:
+
+    """Bin variants into fixed-size genomic windows and compute per-window SNP density.
+
+    Parameters
+    ----------
+    data_df : pandas.DataFrame
+        Input DataFrame containing genomic data.
+    chr_col : str, optional
+        Column name for chromosome identifiers. Defaults to 'CHR'.
+    pos_col : str, optional
+        Column name for base pair positions. Defaults to 'POS'.
+    window_kb : float, optional
+        Window size in kilobases used to bin variants along each chromosome. Defaults to 100.
+
+    Returns
+    -------
+    dict
+        A dictionary with the following keys:
+
+        - data : pandas.DataFrame
+            One row per non-empty window, with columns `chr_col`, 'window_start', 'count'
+            (number of variants in the window) and 'rel_pos' (genome-wide relative position
+            of the window's midpoint).
+        - axis : pandas.DataFrame
+            The center positions of each chromosome for x-axis tick placement.
+        - max_count : int
+            The maximum per-window SNP count.
+
+    Raises
+    ------
+    TypeError
+        If `data_df` is not a pandas DataFrame.
+    ValueError
+        If `chr_col` or `pos_col` are not found in the DataFrame, or if `window_kb` is not
+        a positive number.
+    """
+
+    if not isinstance(data_df, pd.DataFrame):
+        raise TypeError("Input data must be a pandas DataFrame.")
+    if chr_col not in data_df.columns:
+        raise ValueError(f"Column '{chr_col}' not found in the input DataFrame.")
+    if pos_col not in data_df.columns:
+        raise ValueError(f"Column '{pos_col}' not found in the input DataFrame.")
+    if not isinstance(window_kb, (int, float)) or window_kb <= 0:
+        raise ValueError(f"window_kb must be a positive number, got {window_kb}.")
+
+    window_bp = window_kb * 1000
+
+    # Per-chromosome genomic offsets, in standard genomic order (reused from Manhattan plotting)
+    chr_offsets = _compute_chr_offsets(data_df, chr_col=chr_col, pos_col=pos_col)
+
+    # Vectorized windowed SNP counting: one groupby over the whole dataset, no per-chromosome loop
+    window_start = ((data_df[pos_col] // window_bp) * window_bp).rename('window_start')
+    density = pd.concat([data_df[chr_col], window_start], axis=1)
+    density = density.groupby([chr_col, 'window_start']).size().rename('count').reset_index()
+
+    density = density.merge(chr_offsets, on=chr_col, how='left')
+    density['rel_pos'] = density['window_start'] + window_bp / 2 + density['cumulativechrlength']
+    density = density.drop(columns=['cumulativechrlength'])
+
+    density = density.sort_values(
+        by=[chr_col, 'window_start'], key=lambda s: s.map(_chromosome_sort_key) if s.name == chr_col else s
+    ).reset_index(drop=True)
+
+    axis_center = find_chromosomes_center(density, chr_col=chr_col, chr_pos_col='rel_pos')
+
+    return {
+        'data': density,
+        'axis': axis_center,
+        'max_count': int(density['count'].max())
+    }
+
+def brisbane_draw(
+    data_df: pd.DataFrame,
+    chr_col: str,
+    pos_col: str,
+    plot_dir: str,
+    window_kb: float = 100,
+    save_name: str = 'brisbane_plot.png',
+    chr_colors: list = ['#000000', '#E69F00'],
+    point_size: float = 8,
+    show_mean_line: bool = True,
+    show_median_line: bool = True,
+    mean_line_color: str = 'red',
+    median_line_color: str = 'red',
+    yaxis_margin: float = 2,
+    dpi: int = 400
+) -> bool:
+
+    """Generate a Brisbane plot (genome-wide density of significant signals) for genomic data.
+
+    This function bins variants into fixed-size windows along each chromosome and plots
+    the number of variants per window against genomic position, following the style used
+    in Yengo et al. (2022, Nature): windows are drawn as squares alternating in color by
+    chromosome, with horizontal lines marking the genome-wide mean and/or median density.
+    Unlike a Manhattan plot, the y-axis represents SNP count per window rather than
+    -log10(p-value).
+
+    Parameters
+    ----------
+    data_df : pandas.DataFrame
+        DataFrame containing the SNP data to be plotted.
+    chr_col : str
+        Column name in data_df that contains the chromosome information.
+    pos_col : str
+        Column name in data_df that contains the position information.
+    plot_dir : str
+        Directory path where the plot will be saved.
+    window_kb : float, optional
+        Window size in kilobases used to bin variants along each chromosome. Defaults to 100.
+    save_name : str, default='brisbane_plot.png'
+        Filename for the saved plot.
+    chr_colors : list, default=['#000000', '#E69F00']
+        Two (or more) colors cycled across chromosomes to distinguish adjacent chromosomes.
+    point_size : float, default=8
+        Marker size for each window's point.
+    show_mean_line : bool, default=True
+        Whether to draw a horizontal line at the genome-wide mean window density.
+    show_median_line : bool, default=True
+        Whether to draw a horizontal line at the genome-wide median window density.
+    mean_line_color : str, default='red'
+        Color of the mean-density line.
+    median_line_color : str, default='red'
+        Color of the median-density line.
+    yaxis_margin : float, default=2
+        Additional margin added to the y-axis maximum.
+    dpi : int, default=400
+        Resolution of the saved image in dots per inch.
+
+    Returns
+    -------
+    bool
+        True if the plot was successfully created and saved.
+
+    Raises
+    ------
+    TypeError
+        If input data is not a pandas DataFrame.
+    ValueError
+        If required columns are not found in the input DataFrame.
+    FileNotFoundError
+        If the specified plot directory does not exist.
+
+    Notes
+    -----
+    Saves a Brisbane plot image to the specified directory.
+    """
+
+    if not isinstance(data_df, pd.DataFrame):
+        raise TypeError("Input data must be a pandas DataFrame.")
+    if chr_col not in data_df.columns:
+        raise ValueError(f"Column '{chr_col}' not found in the input DataFrame.")
+    if pos_col not in data_df.columns:
+        raise ValueError(f"Column '{pos_col}' not found in the input DataFrame.")
+    if not os.path.exists(plot_dir):
+        raise FileNotFoundError(f"Directory '{plot_dir}' not found.")
+
+    # Suppress warnings about the number of chromosomes exceeding the number of palette colors
+    warnings.filterwarnings("ignore", category=UserWarning)
+
+    plot_data = brisbane_process_data(data_df, chr_col=chr_col, pos_col=pos_col, window_kb=window_kb)
+    density = plot_data['data']
+
+    max_x_axis = density['rel_pos'].max()
+
+    fig = plt.figure(figsize=(15, 6))
+    ax = fig.add_subplot(111)
+
+    ax = sns.scatterplot(
+        x        =density['rel_pos'],
+        y        =density['count'],
+        hue      =density[chr_col],
+        palette  =chr_colors,
+        marker   ='s',
+        s        =point_size,
+        ax       =ax,
+        legend   =False,
+        edgecolor='none'
+    )
+
+    ax.set_ylabel(f"Density of GWS SNPs within {window_kb:g} kb", fontsize=7)
+    ax.set_xlabel("Chromosome", fontsize=7)
+
+    ax.set_xlim(0, max_x_axis + 1000)
+    ax.set_ylim(0, plot_data['max_count'] + yaxis_margin)
+
+    x_ticks = plot_data['axis']['center'].tolist()
+    x_labels = plot_data['axis'][chr_col].astype(str).tolist()
+    ax.set_xticks(ticks=x_ticks)
+    ax.set_xticklabels(x_labels)
+    ax.tick_params(axis='both', labelsize=7)
+
+    if show_mean_line:
+        mean_density = density['count'].mean()
+        ax.axhline(
+            mean_density,
+            color    =mean_line_color,
+            linestyle='solid',
+            lw       =1,
+            label    =f"Mean genome-wide density: {mean_density:.2g}"
+        )
+
+    if show_median_line:
+        median_density = density['count'].median()
+        ax.axhline(
+            median_density,
+            color    =median_line_color,
+            linestyle='dashed',
+            lw       =1,
+            label    =f"Median genome-wide density: {median_density:.2g}"
+        )
+
+    if show_mean_line or show_median_line:
+        ax.legend(loc='upper left', fontsize=8, frameon=False)
+
+    plt.tight_layout()
+
+    # save the plot
+    plt.savefig(
+        os.path.join(plot_dir, save_name), dpi=dpi
+    )
     plt.show()
 
     return True
