@@ -1211,7 +1211,7 @@ class ProcessVCF:
         """
         
         if not isinstance(output_name, str):
-            raise TypeError(f"output_file should be of type str, got {type(output_file)}")
+            raise TypeError(f"output_name should be of type str, got {type(output_name)}")
         
         if output_name.endswith('.vcf'):
             output_name += '.gz' 
