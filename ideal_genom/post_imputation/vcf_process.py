@@ -352,9 +352,12 @@ class FilterVariants(ParallelTaskRunner):
     
     Notes
     -----
-    The class searches for files matching the pattern ``*dose.vcf.gz`` in the input directory
-    and processes them in parallel. The filtered output files will be saved in the output
-    directory with the specified prefix added to their original filenames.
+    The class searches for files matching the pattern ``unzipped-*.dose.vcf.gz`` in the input
+    directory and processes them in parallel. This excludes the accompanying
+    ``*.empiricalDose.vcf.gz`` files that the Michigan Imputation Server also produces per
+    chromosome, since those lack the R2 INFO field and would make bcftools fail. The filtered
+    output files will be saved in the output directory with the specified prefix added to their
+    original filenames.
 
     Note
     ----
@@ -370,8 +373,9 @@ class FilterVariants(ParallelTaskRunner):
         """
         Execute the task of filtering variants based on an R² threshold.
 
-        This method collects the necessary files with the pattern ``*dose.vcf.gz`` and runs 
-        the filtering task with the specified parameters.
+        This method collects the necessary files with the pattern ``unzipped-*.dose.vcf.gz`` and
+        runs the filtering task with the specified parameters, excluding the accompanying
+        ``*.empiricalDose.vcf.gz`` files.
 
         Returns
         -------
@@ -393,7 +397,7 @@ class FilterVariants(ParallelTaskRunner):
         if not isinstance(self.output_prefix, str):
             raise TypeError(f"prefix should be of type str, got {type(self.output_prefix)}")
 
-        self._file_collector('unzipped-*.vcf.gz')
+        self._file_collector('unzipped-*.dose.vcf.gz')
 
         self._run_task(
             self.filter_variants,
