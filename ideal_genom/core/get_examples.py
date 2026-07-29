@@ -397,7 +397,7 @@ def get_bmi_japanese_gwas_sex_dependent() -> Path:
     df_top = pd.read_excel(output_path, engine='openpyxl', header=[0,1,2,3], sheet_name='S.Table4')
 
     df_top = df_top[df_top.columns[0:4]].copy()
-    df_top.columns = df_top.columns.droplevel([0,2,3])
+    df_top.columns = df_top.columns.droplevel([0,2,3]) # type: ignore
     df_top.columns = ['SNP', 'Sex', 'CHR', 'POS']
 
     mask_rsid = df_top['SNP'].str.startswith('rs')
