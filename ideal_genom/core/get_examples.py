@@ -180,6 +180,75 @@ def get_top_cond_trumpet_quantitative() -> Path:
     return output_csv
 
 
+def get_yengo_height_independent_signals() -> Path:
+    """
+    Downloads and processes the independent COJO signals from the GIANT height GWAS.
+
+    This function retrieves Supplementary Table 5 from Yengo et al. (2022), which lists the
+    12,111 conditionally independent (COJO) genome-wide-significant SNPs identified in the
+    GIANT/UK Biobank meta-analysis of human height, along with a precomputed signal-density
+    metric (number of other COJO SNPs within 100 kb) used for the paper's Brisbane plot
+    (Fig. 2).
+
+    Yengo, L., Vedantam, S., Marouli, E. et al. A saturated map of common genetic variants
+    associated with human height. *Nature* **610**, 704-712 (2022).
+    https://doi.org/10.1038/s41586-022-05275-y
+
+    Returns
+    -------
+        Path: Path to the processed CSV file containing the independent signals
+              (columns: CHR, POS, SIGNAL_DENSITY, AFR, EAS, HIS). Coordinates are on
+              genome build hg19/GRCh37.
+
+    Notes
+    -----
+        - The function checks if the processed CSV already exists before downloading
+        - The original Excel file is deleted after processing
+        - Only autosomal variants are present in the source table (no X/Y/MT signals)
+    """
+
+    library_path = Path(__file__).resolve().parent.parent
+
+    url = r"https://static-content.springer.com/esm/art%3A10.1038%2Fs41586-022-05275-y/MediaObjects/41586_2022_5275_MOESM6_ESM.xlsx"
+    output_filename = "2022_Yengo_Height_COJO_independent_signals.xlsx"
+
+    output_path = library_path / "data" / "sumstats" / output_filename
+
+    output_csv = output_path.with_suffix('.csv')
+    if output_csv.exists():
+        logger.info(f"File already exists: {output_csv}")
+        return output_csv
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    response = requests.get(url, stream=True)  # Stream to handle large files
+    if response.status_code == 200:
+        with open(output_path, "wb") as file:
+            for chunk in response.iter_content(chunk_size=1024):  # Download in chunks
+                file.write(chunk)
+        logger.info(f"Downloaded file: {output_path}")
+    else:
+        logger.info(f"Failed to download file. Status code: {response.status_code}")
+
+    df_signals = pd.read_excel(output_path, engine='openpyxl')
+
+    df_signals = df_signals.rename(columns={
+        'Chromosome': 'CHR',
+        'Position (hg37)': 'POS',
+        'Signal Density (number of other COJO SNPs within 100 kb)': 'SIGNAL_DENSITY',
+        'Is this signal contributed by African ancesries (1=Yes; 0 = No)': 'AFR',
+        'Is this signal contributed by East-Asian ancesries (1=Yes; 0 = No)': 'EAS',
+        'Is this signal contributed by Hispanic Ethnicities (1=Yes; 0 = No)': 'HIS',
+    })
+
+    df_signals.to_csv(output_csv, index=False, sep='\t')
+    logger.info(f"Saved independent signals to: {output_csv}")
+
+    output_path.unlink()
+
+    return output_csv
+
+
 def get_trumpet_binary_example() -> Path:
     """
     Downloads and prepares a GWAS summary statistics file for analysis.
