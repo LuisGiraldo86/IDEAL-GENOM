@@ -7,6 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 import os
+import pathlib
 import sys
 
 sys.path.insert(0, os.path.abspath('../..'))
@@ -15,8 +16,26 @@ import sphinx_rtd_theme
 project = 'IDEAL-GENOM'
 copyright = '2026, Luis Giraldo González, Amabel Tenghe'
 author = 'Luis Giraldo González, Amabel Tenghe'
-release = '1.3.0'
-version = '1.3.0'
+# Single source of truth for the version is pyproject.toml, so read it directly:
+# docs are always built from a repo checkout (including on Read the Docs), and an
+# installed copy of the package in the build environment may be stale relative to
+# the source being documented. Installed metadata is only a fallback.
+def _get_version() -> str:
+    try:
+        import tomllib
+        pyproject = pathlib.Path(__file__).resolve().parents[2] / 'pyproject.toml'
+        with pyproject.open('rb') as fh:
+            return tomllib.load(fh)['tool']['poetry']['version']
+    except Exception:
+        pass
+    try:
+        from importlib.metadata import version as _pkg_version
+        return _pkg_version('ideal-genom')
+    except Exception:
+        return '0.0.0+unknown'
+
+
+release = version = _get_version()
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

@@ -1,7 +1,7 @@
 Configuration Guide
 ===================
 
-This comprehensive guide explains the YAML-based configuration system in IDEAL-GENOM v1.3.0. The configuration file controls all aspects of your genomic analysis pipeline, from data paths to QC thresholds.
+This comprehensive guide explains the YAML-based configuration system in IDEAL-GENOM |release|. The configuration file controls all aspects of your genomic analysis pipeline, from data paths to QC thresholds.
 
 Overview
 --------
