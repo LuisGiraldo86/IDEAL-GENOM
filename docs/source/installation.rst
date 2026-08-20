@@ -90,8 +90,8 @@ For the latest features and development version:
 
 .. code-block:: bash
 
-    git clone https://github.com/cge-tubingens/ideal-genom-qc.git
-    cd ideal-genom-qc
+    git clone https://github.com/LuisGiraldo86/IDEAL-GENOM.git
+    cd IDEAL-GENOM
     pip install -e .
 
 Note: The development version may contain experimental features and should be used with caution in production environments.
@@ -104,8 +104,8 @@ The Docker image includes IDEAL-GENOM and all required genomic tools pre-install
 .. code-block:: bash
 
     # Build from source
-    git clone https://github.com/cge-tubingens/ideal-genom-qc.git
-    cd ideal-genom-qc
+    git clone https://github.com/LuisGiraldo86/IDEAL-GENOM.git
+    cd IDEAL-GENOM
     docker build -t ideal-genom .
     
     # Run the container
@@ -162,7 +162,7 @@ Troubleshooting
 **Getting Help:**
 
 - Check the :doc:`troubleshooting` guide for detailed solutions
-- Report issues on `GitHub <https://github.com/cge-tubingens/cge-comrare-pipeline/issues>`_
+- Report issues on `GitHub <https://github.com/LuisGiraldo86/IDEAL-GENOM/issues>`_
 - See :doc:`faq` for frequently asked questions
 
 Next Steps

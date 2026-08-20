@@ -1,7 +1,7 @@
 Troubleshooting Guide
 =====================
 
-This guide helps you diagnose and resolve common issues when using IDEAL-GENOM-QC. Issues are organized by category for easier navigation.
+This guide helps you diagnose and resolve common issues when using IDEAL-GENOM. Issues are organized by category for easier navigation.
 
 Installation Issues
 -------------------
@@ -51,12 +51,12 @@ Permission Denied Errors
 .. code-block:: bash
 
     # Install to user directory
-    pip install --user ideal-genom-qc
+    pip install --user ideal-genom
     
     # Or use virtual environment
     python -m venv qc_env
     source qc_env/bin/activate
-    pip install ideal-genom-qc
+    pip install ideal-genom
     
     # Fix file permissions
     chmod +x /path/to/plink
@@ -79,8 +79,8 @@ Python Module Import Errors
 
 .. code-block:: bash
 
-    pip uninstall ideal-genom-qc
-    pip install ideal-genom-qc
+    pip uninstall ideal-genom
+    pip install ideal-genom
 
 3. **Check Python environment:**
 
@@ -608,7 +608,7 @@ When reporting issues, please include:
     # System info
     uname -a
     python --version
-    pip show ideal-genom-qc
+    pip show ideal-genom
     plink --version
     plink2 --version
 
@@ -626,8 +626,8 @@ When reporting issues, please include:
 
 **Where to get help:**
 
-- GitHub Issues: https://github.com/cge-tubingens/IDEAL-GENOM-QC/issues
-- Documentation: https://ideal-genom-qc.readthedocs.io/
+- GitHub Issues: https://github.com/LuisGiraldo86/IDEAL-GENOM/issues
+- Documentation: https://verus-ideal-genom.readthedocs.io/
 - Email: Contact information in the repository
 
 Debug Mode

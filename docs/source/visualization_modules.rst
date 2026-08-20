@@ -13,7 +13,7 @@ Module Overview
 manhattan_type
 --------------
 
-Generate Manhattan and Miami plots for genome-wide association studies (GWAS).
+Generate Manhattan, Miami and Brisbane plots for genome-wide association studies (GWAS).
 
 **Module:** ``ideal_genom.visualizations.manhattan_type``
 
@@ -24,6 +24,8 @@ Features:
 - Annotation of SNPs with gene information from various sources
 - Highlighting and labeling of specific SNPs of interest
 - Support for both Manhattan (single study) and Miami (two studies) plots
+- Brisbane plots of genome-wide signal density
+- Genomic chromosome ordering (1-22, X, Y, XY, MT) regardless of how the input is sorted
 
 Key Functions:
 ^^^^^^^^^^^^^^
@@ -75,6 +77,69 @@ Adapted from the runnable ``viz_notebooks/manhattan.ipynb`` and ``viz_notebooks/
        legend_bottom='Replication cohort',
        save_name='miami_plot.png'
    )
+
+Brisbane Plots:
+^^^^^^^^^^^^^^^
+
+A Brisbane plot shows the local *density* of independent, genome-wide-significant
+signals along the genome rather than their -log10(p-value). Variants are binned into
+fixed-size, non-overlapping windows (``window_kb``, default 100 kb) and each window is
+drawn as a point whose height is the number of signals it contains, in the style of
+Yengo et al. (2022, *Nature* **610**, 704-712). Horizontal lines mark the genome-wide
+mean and median density.
+
+Note that the input is expected to be a list of *conditionally independent* signals
+(e.g. COJO output), not raw summary statistics — feeding in every significant SNP
+measures LD block size rather than signal density.
+
+Adapted from the runnable ``viz_notebooks/brisbane.ipynb`` notebook:
+
+.. code-block:: python
+
+   import pandas as pd
+   from ideal_genom.visualizations.manhattan_type import brisbane_draw, brisbane_process_data
+   from ideal_genom.core.get_examples import get_yengo_height_independent_signals
+
+   # Download the 12,111 independent height signals from Yengo et al. (2022), build GRCh37
+   signals_path = get_yengo_height_independent_signals()
+   df_signals = pd.read_csv(signals_path, sep="\t")
+
+   # Density in 100 kb windows
+   brisbane_draw(
+       data_df=df_signals,
+       chr_col='CHR',
+       pos_col='POS',
+       plot_dir="./plots",
+       window_kb=100,
+       save_name='brisbane_plot_100kb.png',
+       point_size=10,
+       figsize=(11, 3)
+   )
+
+   # A wider window smooths the density and highlights broader signal-dense regions
+   brisbane_draw(
+       data_df=df_signals,
+       chr_col='CHR',
+       pos_col='POS',
+       plot_dir="./plots",
+       window_kb=1000,
+       ytick_step=None,
+       save_name='brisbane_plot_1000kb.png',
+       chr_colors=['#377eb8', '#4daf4a'],
+       figsize=(11, 3)
+   )
+
+``brisbane_process_data()`` returns the underlying windowed counts if you want to
+inspect them directly:
+
+.. code-block:: python
+
+   brisbane_data = brisbane_process_data(
+       df_signals, chr_col='CHR', pos_col='POS', window_kb=100
+   )
+
+   print(brisbane_data['max_count'])   # densest window
+   brisbane_data['data'].head()        # one row per non-empty window
 
 plots
 -----

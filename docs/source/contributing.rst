@@ -1,7 +1,7 @@
 Contributing Guide
 ==================
 
-We welcome contributions to IDEAL-GENOM-QC! This guide will help you get started with contributing to the project, whether you're fixing bugs, adding features, improving documentation, or helping with testing.
+We welcome contributions to IDEAL-GENOM! This guide will help you get started with contributing to the project, whether you're fixing bugs, adding features, improving documentation, or helping with testing.
 
 Getting Started
 ---------------
@@ -14,8 +14,8 @@ Development Setup
 .. code-block:: bash
 
     # Fork on GitHub, then clone your fork
-    git clone https://github.com/YOUR_USERNAME/IDEAL-GENOM-QC.git
-    cd IDEAL-GENOM-QC
+    git clone https://github.com/YOUR_USERNAME/IDEAL-GENOM.git
+    cd IDEAL-GENOM
 
 2. **Set up development environment:**
 
@@ -58,7 +58,7 @@ Understanding the codebase structure:
 
 .. code-block:: text
 
-    IDEAL-GENOM-QC/
+    IDEAL-GENOM/
     ├── ideal_genom_qc/          # Main package
     │   ├── __init__.py
     │   ├── SampleQC.py          # Sample quality control
@@ -107,7 +107,7 @@ Bug Reports
     **Environment**
     - OS: [e.g., Ubuntu 20.04]
     - Python version: [e.g., 3.9.7]
-    - IDEAL-GENOM-QC version: [e.g., 0.1.0]
+    - IDEAL-GENOM version: [e.g., 0.1.0]
     - PLINK versions: [e.g., 1.9, 2.0]
     
     **Additional Context**
@@ -533,4 +533,4 @@ Getting Help
 - `pytest documentation <https://docs.pytest.org/>`_
 - `Sphinx documentation <https://www.sphinx-doc.org/>`_
 
-Thank you for contributing to IDEAL-GENOM-QC! 🎉
+Thank you for contributing to IDEAL-GENOM! 🎉

@@ -23,7 +23,7 @@ IDEAL-GENOM Documentation
 
 **IDEAL-GENOM** is a comprehensive Python package for automated, reproducible analysis of human genotype data. It provides end-to-end pipelines for genomic quality control (QC), post-imputation VCF processing, and genome-wide association studies (GWAS). The package wraps years of research expertise from CGE Tübingen, integrating PLINK 1.9/2.0, GCTA, and BCFtools with rich reporting and visualizations.
 
-Version: **1.2.0**
+Version: **1.3.0**
 
 🎯 Key Features
 ---------------
@@ -40,14 +40,6 @@ Version: **1.2.0**
    - **Variant Filtering**: Hardy-Weinberg equilibrium, MAF, genotype rate, differential missingness
    - **GWAS Tools**: Association testing, top-hits extraction, gene annotation (Ensembl/RefSeq)
    - **Dimensionality Reduction**: PCA and UMAP for population structure visualization
-
-**Modern Design**
-   - **YAML Configuration**: Single configuration file with clear, hierarchical structure
-   - **Flexible Pipeline System**: Enable/disable steps, customize parameters per analysis
-   - **Multiple Interfaces**: Command-line tool, Python API, Jupyter notebooks
-   - **Docker Support**: Pre-configured container with all genomic tools installed
-   - **Automated Workflows**: Pipeline executor handles dependencies and data flow
-   - **Rich Reporting**: Publication-ready plots and comprehensive QC metrics
 
 **Modern Design**
    - **YAML Configuration**: Single configuration file with clear, hierarchical structure
@@ -180,15 +172,15 @@ If you use IDEAL-GENOM in your research, please cite:
      title = {IDEAL-GENOM: Comprehensive Genomic Analysis Pipeline},
      author = {Giraldo González, Luis and Tenghe, Amabel},
      year = {2026},
-     version = {1.2.0},
-     url = {https://github.com/cge-tubingens/ideal-genom-qc}
+     version = {1.3.0},
+     url = {https://github.com/LuisGiraldo86/IDEAL-GENOM}
    }
 
 Getting Help
 ------------
 
-- **Documentation**: https://ideal-genom-qc.readthedocs.io/
-- **Issues**: https://github.com/cge-tubingens/cge-comrare-pipeline/issues
+- **Documentation**: https://verus-ideal-genom.readthedocs.io/
+- **Issues**: https://github.com/LuisGiraldo86/IDEAL-GENOM/issues
 - **Examples**: See the :doc:`examples` page for complete workflows
 
 License
