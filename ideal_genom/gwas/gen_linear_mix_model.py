@@ -61,13 +61,18 @@ class GWAS_GLMM:
         
         input_path = Path(input_path)
         output_path = Path(output_path)
-        
+
+        if not input_path.exists() or not input_path.is_dir():
+            raise FileNotFoundError(f"Input path does not exist: {input_path}")
+        if not output_path.exists() or not output_path.is_dir():
+            raise FileNotFoundError(f"Output path does not exist: {output_path}")
+
         # check if input_name and output_name are set
         if input_name is None or output_name is None:
             raise ValueError("Values for input_name and output_name must be set upon initialization.")
         if not isinstance(input_name, str) or not isinstance(output_name, str):
             raise TypeError("input_name and output_name should be of type str.")
-        
+
         # check existence of PLINK files
         if not (input_path / f'{input_name}.bed').exists():
             raise FileNotFoundError(f"PLINK bed file was not found: {(input_path / f'{input_name}.bed')}")
@@ -75,14 +80,9 @@ class GWAS_GLMM:
             raise FileNotFoundError(f"PLINK bim file was not found: {(input_path / f'{input_name}.bim')}")
         if not (input_path / f'{input_name}.fam').exists():
             raise FileNotFoundError(f"PLINK fam file was not found: {(input_path / f'{input_name}.fam')}")
-        
+
         if not isinstance(recompute, bool):
             raise TypeError("recompute should be of type bool.")
-        
-        if not input_path.exists() or not input_path.is_dir():
-            raise FileNotFoundError(f"Input path does not exist: {input_path}")
-        if not output_path.exists() or not output_path.is_dir():
-            raise FileNotFoundError(f"Output path does not exist: {output_path}")
 
         self.input_path  = input_path
         self.output_path = output_path
@@ -94,7 +94,7 @@ class GWAS_GLMM:
         self.results_dir = output_path / 'gwas_glmm'
         self.results_dir.mkdir(parents=True, exist_ok=True)
 
-        print("\033[1;32mAnalysis of GWAS data using a random effect model initialized.\033[0m")
+        logger.info("\033[1;32mAnalysis of GWAS data using a random effect model initialized.\033[0m")
 
     def prepare_aux_files(self) -> None:
         
@@ -112,8 +112,6 @@ class GWAS_GLMM:
         input_path = self.input_path
         input_name = self.input_name
         results_dir= self.results_dir
-
-        step = "prepare_aux_files"
 
         df_fam = pd.read_csv(
             input_path / f'{input_name}.fam',
@@ -271,13 +269,13 @@ class GWAS_GLMM:
         threads = get_optimal_threads()
 
         if not (results_dir / f'{input_name}_sparse.grm.id').exists():
-            raise FileExistsError(f"File {input_name+'_sparse.grm.id'} is not in the results directory.")
+            raise FileNotFoundError(f"File {input_name+'_sparse.grm.id'} is not in the results directory.")
         if not (results_dir / f'{input_name}_sparse.grm.sp').exists():
-            raise FileExistsError(f"File {input_name+'_sparse.grm.id'} is not in the results directory.")
+            raise FileNotFoundError(f"File {input_name+'_sparse.grm.id'} is not in the results directory.")
         if not (results_dir / f'{input_name}_sex.covar').exists():
-            raise FileExistsError(f"File {input_name+'sex.covar'} is not in the results directory.")
+            raise FileNotFoundError(f"File {input_name+'sex.covar'} is not in the results directory.")
         if not (results_dir / f'{input_name}_pheno.phen').exists():
-            raise FileExistsError(f"File {input_name+'_pheno.phen'} is not in the results directory.")
+            raise FileNotFoundError(f"File {input_name+'_pheno.phen'} is not in the results directory.")
 
         # gcta command
         gcta_args = [
@@ -332,7 +330,7 @@ class GWAS_GLMM:
         if not isinstance(maf, float):
             raise TypeError("maf should be of type float.")
         if maf < 0 or maf > 0.5:
-            raise ValueError("maf should be between 0 and 1.")
+            raise ValueError("maf should be between 0 and 0.5.")
 
         # compute the number of threads to use
         threads = get_optimal_threads()
@@ -417,8 +415,6 @@ class GWAS_GLMM:
         results_dir = self.results_dir
         output_name = self.output_name
 
-        step = "annotate_hits"
-
         # load the data
         cojo_file_path = results_dir / f'{output_name}_assocSparseCovar_pca_sex-mlm-binary-cojo.jma.cojo'
 
@@ -437,7 +433,7 @@ class GWAS_GLMM:
                 ).rename(columns={"GENE":"GENENAME"})
             df_hits.to_csv(results_dir / 'top_hits_annotated.tsv', sep="\t", index=False)
         else:
-            raise FileExistsError("File cojo_file.jma not found in the results directory.")
+            raise FileNotFoundError(f"File {output_name}_assocSparseCovar_pca_sex-mlm-binary-cojo.jma.cojo not found in the results directory: {results_dir}")
 
         
         return
