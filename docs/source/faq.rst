@@ -50,12 +50,12 @@ A: Yes! You can install IDEAL-GENOM in user space:
 .. code-block:: bash
 
     # Install to user directory
-    pip install --user ideal-genom-qc
+    pip install --user ideal-genom
     
     # Or use a virtual environment
     python -m venv ideal_qc_env
     source ideal_qc_env/bin/activate
-    pip install ideal-genom-qc
+    pip install ideal-genom
 
 Just ensure PLINK tools are available in your PATH or specify their location.
 
@@ -354,7 +354,7 @@ A: Reference data issues:
 
 Or provide your own reference files in the configuration.
 
-**Q: Can I run IDEAL-GENOM-QC on a cluster/HPC system?**
+**Q: Can I run IDEAL-GENOM on a cluster/HPC system?**
 
 A: Yes! Example SLURM script:
 
@@ -380,14 +380,14 @@ Contributing and Support
 
 **Q: I found a bug. How do I report it?**
 
-A: Please report bugs on our `GitHub Issues page <https://github.com/cge-tubingens/IDEAL-GENOM-QC/issues>`_ with:
+A: Please report bugs on our `GitHub Issues page <https://github.com/LuisGiraldo86/IDEAL-GENOM/issues>`_ with:
 
 1. Complete error message
 2. Configuration files used
 3. System information (OS, Python version, PLINK versions)
 4. Steps to reproduce the issue
 
-**Q: Can I contribute to IDEAL-GENOM-QC development?**
+**Q: Can I contribute to IDEAL-GENOM development?**
 
 A: Absolutely! We welcome contributions:
 
@@ -400,4 +400,4 @@ See our :doc:`contributing` guide for details.
 
 **Q: Is commercial use allowed?**
 
-A: Yes, IDEAL-GENOM-QC is open source under the MIT license, allowing commercial use. Please review the license terms in the repository for full details.
+A: Yes, IDEAL-GENOM is open source under the MIT license, allowing commercial use. Please review the license terms in the repository for full details.

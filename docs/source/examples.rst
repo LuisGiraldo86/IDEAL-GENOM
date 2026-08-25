@@ -506,10 +506,22 @@ The package includes interactive Jupyter notebooks in the ``notebooks/`` directo
 
 **Available Notebooks:**
 
+- ``00-1KG_phenotype.ipynb``: Builds the example dataset from 1000 Genomes data
 - ``01-sample_qc.ipynb``: Interactive sample QC with live plotting
-- ``02-ancestry_qc.ipynb``: Population structure analysis with visualizations
+- ``02-ancestry_qc.ipynb``: Ancestry QC and outlier detection against the 1000 Genomes reference
 - ``03-variant_qc.ipynb``: Variant-level quality control
-- ``04-population.ipynb``: Population genetics analysis
+- ``04-dimensionality_reduc.ipynb``: Population structure via PCA, UMAP and t-SNE
+- ``05-fst_statistic.ipynb``: Fst statistics between the study cohort and reference populations
+
+The ``viz_notebooks/`` directory contains the matching examples for the GWAS
+summary-statistics visualizations, using the example datasets downloaded by
+:mod:`ideal_genom.core.get_examples`:
+
+- ``manhattan.ipynb`` / ``miami.ipynb``: Manhattan and Miami plots
+- ``brisbane.ipynb``: Brisbane signal-density plot
+- ``qq_plot.ipynb``: QQ plots
+- ``beta_beta.ipynb``: Effect-size comparison between two studies
+- ``trumpet_binary.ipynb`` / ``trumpet_quantitative.ipynb``: Trumpet plots
 
 **Notebook Features:**
 

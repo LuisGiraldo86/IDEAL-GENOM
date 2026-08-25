@@ -36,8 +36,8 @@ Configuration templates are included in the repository under ``yaml_configs/``:
 .. code-block:: bash
 
     # Clone the repository (if you haven't already)
-    git clone https://github.com/cge-tubingens/ideal-genom-qc.git
-    cd ideal-genom-qc
+    git clone https://github.com/LuisGiraldo86/IDEAL-GENOM.git
+    cd IDEAL-GENOM
     
     # Copy the QC pipeline template
     cp yaml_configs/qc_pipeline_config_template.yaml my_qc_pipeline.yaml
@@ -648,6 +648,6 @@ Now that you understand the basics:
 
 **Getting Help:**
 
-- GitHub Issues: https://github.com/cge-tubingens/IDEAL-GENOM-QC/issues
+- GitHub Issues: https://github.com/LuisGiraldo86/IDEAL-GENOM/issues
 - Check logs: Review ``pipeline.log`` for detailed execution information
 - Community: Join discussions on the GitHub repository
