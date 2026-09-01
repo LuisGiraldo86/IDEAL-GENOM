@@ -9,6 +9,8 @@
 
 **IDEAL-GENOM** is a comprehensive Python package for automated, reproducible analysis of human genotype data. Currently it has implemented three pipelines: genomic quality control (QC) for case/control studies; processing VCF files after imputation; and genome-wide association studies (GWAS). It wraps years of research at CGE Tübingen, leveraging PLINK 1.9/2.0, GCTA and bcftools and also providing rich reporting and visualizations.
 
+📌 Check out the [ECCB 2026 conference poster](https://LuisGiraldo86.github.io/ideal-genom-eccb2026/) presenting IDEAL-GENOM.
+
 ## Key Features
 
 - **Sample QC**: Automated sample-level filtering.
