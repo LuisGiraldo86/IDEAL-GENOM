@@ -1,0 +1,56 @@
+name: Release
+
+# Cutting a release is now: bump pyproject.toml + changelogs, commit, then
+#   git tag vX.Y.Z && git push origin vX.Y.Z
+# This workflow takes it from there: verifies the tag matches pyproject.toml,
+# builds sdist/wheel, publishes to PyPI (via Trusted Publishing, no stored
+# token), and creates a GitHub Release with the built artifacts attached.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write # to create the GitHub Release
+  id-token: write # required for PyPI Trusted Publishing (OIDC)
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/ideal-genom/
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: snok/install-poetry@v1
+        with:
+          version: "1.8.3"
+
+      - name: Verify tag matches pyproject.toml version
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          pyproject_version="$(poetry version -s)"
+          if [ "$tag_version" != "$pyproject_version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match pyproject.toml version $pyproject_version"
+            exit 1
+          fi
+
+      - name: Build
+        run: poetry build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
