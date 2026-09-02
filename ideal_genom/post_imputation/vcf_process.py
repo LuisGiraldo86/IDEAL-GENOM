@@ -22,7 +22,7 @@ from tqdm import tqdm
 from typing import Optional
 
 from ..core.get_references import AssemblyReferenceFetcher
-from ..core.utils import validate_input_file, validate_file_path, get_optimal_threads
+from ..core.utils import validate_input_file, validate_file_path, validate_bgzip_indexed_vcf, get_optimal_threads
 from ..core.executor import run_bcftools
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -855,13 +855,20 @@ class AnnotateVCF(ParallelTaskRunner):
     TypeError
         If ref_annotation is not a Path object or output_prefix is not a string.
     FileNotFoundError
-        If the reference annotation file does not exist.
+        If the reference annotation file, or its .tbi/.csi index, does not exist.
     IsADirectoryError
         If the reference annotation file is not a file.
-    
+    ValueError
+        If the reference annotation file is not BGZF-compressed (plain gzip or
+        uncompressed VCFs are not usable with bcftools annotate's indexed lookup).
+
     Note
     ----
     This class requires bcftools to be installed and available in the system path.
+    ref_annotation must be a BGZF-compressed VCF/BCF with a `.tbi`/`.csi` index
+    alongside it (e.g. produced by `bgzip` + `bcftools index -t`/`tabix -p vcf`) —
+    otherwise bcftools annotate silently falls back to tab-file mode and fails
+    with an unrelated "-c CHROM option not given" error.
     """
 
     def __init__(self, input_path: Path, output_path: Path, ref_annotation: Path, max_workers: Optional[int] = None, output_prefix: str = 'annotated-') -> None:
@@ -871,8 +878,8 @@ class AnnotateVCF(ParallelTaskRunner):
             raise TypeError(f"ref_annotation should be of type Path, got {type(ref_annotation)}")
         if not isinstance(output_prefix, str):
             raise TypeError(f"output_prefix should be of type str, got {type(output_prefix)}")
-        validate_input_file(ref_annotation)  # Validate the annotation file exists
-        
+        validate_bgzip_indexed_vcf(ref_annotation)  # Must be BGZF-compressed and tabix/CSI-indexed
+
         self.ref_annotation= ref_annotation
         self.output_prefix = output_prefix
 
@@ -1288,7 +1295,8 @@ class ProcessVCF:
         ref_genome : Path, optional
             Path to a custom reference genome file. Defaults to None.
         ref_annotation : Path, optional
-            Path to the reference annotation file for annotating VCF files. Defaults to None.
+            Path to the reference annotation file for annotating VCF files. Must be a
+            BGZF-compressed VCF/BCF with a `.tbi`/`.csi` index alongside it. Defaults to None.
         output_name : str, optional
             Name of the final concatenated output file. Defaults to 'final_output.vcf.gz'.
         max_threads : int, optional
@@ -1297,6 +1305,14 @@ class ProcessVCF:
         Returns
         -------
         None
+
+        Raises
+        ------
+        FileNotFoundError
+            If ref_annotation, or its .tbi/.csi index, does not exist. Raised before
+            any of the unzip/filter/normalize/index steps run.
+        ValueError
+            If ref_annotation is not BGZF-compressed.
         """
 
         password       = process_vcf_params.get('password', None)
@@ -1312,6 +1328,10 @@ class ProcessVCF:
             raise TypeError(f"ref_annotation should be of type Path or None, got {type(ref_annotation)}")
         if isinstance(ref_annotation, str):
             ref_annotation = Path(ref_annotation)
+        if ref_annotation:
+            # Fail fast, before the (potentially very long) unzip/filter/normalize
+            # steps run, rather than discovering a bad annotation file at the last step.
+            validate_bgzip_indexed_vcf(ref_annotation)
 
         self.execute_unzip(password=password)
         self.execute_filter(r2_threshold=r2_threshold)
