@@ -347,6 +347,86 @@ def validate_input_file(file_path: Path, extensions: Optional[List[str]] = None)
     
     return file_path
 
+def validate_bgzip_indexed_vcf(file_path: Path) -> Path:
+    """
+    Validate that a file is a BGZF-compressed, tabix/CSI-indexed VCF/BCF.
+
+    `bcftools annotate --annotations` requires its source file to be
+    recognized as an indexed VCF/BCF for positional record matching. A
+    plain-gzip file, or one missing its `.tbi`/`.csi` index, causes bcftools
+    to silently fall back to generic tab-annotation mode, which then fails
+    with an unrelated-looking error (e.g. "The -c CHROM option not given")
+    instead of a clear message about the annotation file itself.
+
+    Parameters
+    ----------
+    file_path : Path
+        Path to the annotation VCF/BCF file.
+
+    Returns
+    -------
+    Path
+        The validated file path.
+
+    Raises
+    ------
+    TypeError
+        If file_path is not a Path object.
+    FileNotFoundError
+        If the file, or its .tbi/.csi index, does not exist.
+    ValueError
+        If the file is not BGZF-compressed.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> validate_bgzip_indexed_vcf(Path('dbNSFP.vcf.gz'))
+    """
+    validate_input_file(file_path)
+
+    with open(file_path, 'rb') as f:
+        magic = f.read(18)
+
+    is_gzip = len(magic) >= 2 and magic[0:2] == b'\x1f\x8b'
+    is_bgzf = (
+        is_gzip
+        and len(magic) >= 18
+        and bool(magic[3] & 0x04)  # FLG.FEXTRA
+        and magic[12:16] == b'BC\x02\x00'
+    )
+
+    if not is_gzip:
+        raise ValueError(
+            f"Annotation file '{file_path}' is not gzip/BGZF-compressed. "
+            "bcftools annotate requires a BGZF-compressed, indexed VCF/BCF "
+            f"as --annotations. Compress it with: bgzip -c {file_path.name} > <fixed>.vcf.gz"
+        )
+    if not is_bgzf:
+        raise ValueError(
+            f"Annotation file '{file_path}' is plain gzip, not BGZF. bcftools cannot "
+            "do indexed lookups on a plain-gzip file, which makes 'annotate' silently "
+            "fall back to tab-file mode and fail with an unrelated '-c CHROM option "
+            f"not given' error. Re-compress it with: "
+            f"gunzip -c {file_path.name} | bgzip > <fixed>.vcf.gz"
+        )
+
+    index_tbi = Path(str(file_path) + '.tbi')
+    index_csi = Path(str(file_path) + '.csi')
+    if not index_tbi.exists() and not index_csi.exists():
+        raise FileNotFoundError(
+            f"Annotation file '{file_path}' has no .tbi/.csi index. bcftools annotate "
+            f"needs one for indexed lookups. Build one with: bcftools index -t {file_path}"
+        )
+
+    index_path = index_tbi if index_tbi.exists() else index_csi
+    if index_path.stat().st_mtime < file_path.stat().st_mtime:
+        logger.warning(
+            f"Index '{index_path}' is older than annotation file '{file_path}'; it may "
+            f"be stale. Consider rebuilding with: bcftools index -f -t {file_path}"
+        )
+
+    return file_path
+
 def validate_file_path(file_path: Path, must_exist: bool = True, must_be_file: bool = True) -> Path:
     """
     Generic file path validation with flexible requirements.
