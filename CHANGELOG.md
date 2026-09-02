@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-09-02
+
+### Fixed
+- **`ref_annotation` validated before the post-imputation pipeline runs, not
+  after.** `AnnotateVCF`/`ProcessVCF.execute_process_vcf_pipeline()` passed
+  `--annotations <file> --columns ID` to `bcftools annotate` without checking
+  that the reference file was actually BGZF-compressed and tabix/CSI-indexed.
+  A plain-gzip or unindexed reference file made bcftools silently fall back to
+  its tab-annotation mode, failing with an unrelated `The -c CHROM option not
+  given` error — only surfaced at the very last step of the pipeline, after
+  unzip/filter/normalize/index had already run. Added
+  `validate_bgzip_indexed_vcf()` in `ideal_genom/core/utils.py`, called from
+  `AnnotateVCF.__init__` and at the top of
+  `ProcessVCF.execute_process_vcf_pipeline()`, so a bad `ref_annotation` now
+  fails immediately with an actionable message.
+
 ## [1.3.0] - 2026-08-20
 
 ### Added
