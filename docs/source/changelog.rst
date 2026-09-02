@@ -3,7 +3,26 @@ Changelog
 
 All notable changes to IDEAL-GENOM will be documented in this file.
 
-Version 1.3.1 (Current)
+Version 1.3.2 (Current)
+-----------------------
+
+**Released:** September 2026
+
+**Bug Fixes:**
+
+- ``ideal_genom.__version__`` always reported ``"0.0.0"``. ``__init__.py``
+  looked up ``importlib.metadata.version("ideal-genom-qc")``, the package's
+  PyPI name before it was renamed to ``ideal-genom``; that lookup always
+  raised ``PackageNotFoundError``. Now looks up ``"ideal-genom"``.
+
+**Added:**
+
+- ``.github/workflows/release.yml`` — pushing a ``vX.Y.Z`` tag now builds,
+  verifies the tag matches ``pyproject.toml``'s version, publishes to PyPI via
+  Trusted Publishing (no stored token), and creates a GitHub Release with the
+  built sdist/wheel attached. Replaces manual ``poetry build``/``poetry publish``.
+
+Version 1.3.1
 -----------------------
 
 **Released:** September 2026

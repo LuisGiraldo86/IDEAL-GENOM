@@ -21,7 +21,7 @@ try:
     from importlib.metadata import version
     __version__ = version("ideal-genom")
 except Exception:
-    __version__ = "1.3.1"  # fallback version
+    __version__ = "1.3.2"  # fallback version
 
 
 def setup_logging(level: str = "INFO") -> None:
