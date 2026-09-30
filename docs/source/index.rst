@@ -164,13 +164,26 @@ These tools are automatically used by the pipeline and must be installed separat
 Citation
 --------
 
-If you use IDEAL-GENOM in your research, please cite:
+If you use IDEAL-GENOM in your research, please cite the paper published in *G3: Genes, Genomes, Genetics*
+(`doi:10.1093/g3journal/jkag283 <https://doi.org/10.1093/g3journal/jkag283>`_):
+
+.. code-block:: bibtex
+
+   @article{ideal_genom_g3_2026,
+     title   = {{IDEAL-GENOM}: Integrated Downstream Analytical Toolkit for Genomic Analysis},
+     author  = {Gonz{\'a}lez Ricardo, Luis Giraldo and Tenghe, Amabel M. M. and Sreelatha, Ashwin Ashok Kumar and Sharma, Manu},
+     journal = {G3: Genes, Genomes, Genetics},
+     year    = {2026},
+     doi     = {10.1093/g3journal/jkag283}
+   }
+
+To cite a specific software release, you can additionally use:
 
 .. parsed-literal::
 
    @software{ideal_genom_2026,
      title = {IDEAL-GENOM: Comprehensive Genomic Analysis Pipeline},
-     author = {Giraldo González, Luis and Tenghe, Amabel},
+     author = {González Ricardo, Luis Giraldo and Tenghe, Amabel},
      year = {2026},
      version = {|release|},
      url = {https://github.com/LuisGiraldo86/IDEAL-GENOM}

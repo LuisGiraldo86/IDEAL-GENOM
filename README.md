@@ -4,10 +4,14 @@
 [![PyPI version](https://img.shields.io/pypi/v/ideal-genom.svg)](https://pypi.org/project/ideal-genom/)
 [![MIT License](https://img.shields.io/pypi/l/ideal-genom.svg)](https://pypi.org/project/ideal-genom/)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://github.com/LuisGiraldo86/IDEAL-GENOM/blob/main/Dockerfile)
+[![DOI](https://img.shields.io/badge/DOI-10.1093%2Fg3journal%2Fjkag283-blue.svg)](https://doi.org/10.1093/g3journal/jkag283)
 
+[![I just published in G3 — read the IDEAL-GENOM paper](https://raw.githubusercontent.com/LuisGiraldo86/IDEAL-GENOM/main/docs/_static/g3-published-banner.png)](https://doi.org/10.1093/g3journal/jkag283)
 
 
 **IDEAL-GENOM** is a comprehensive Python package for automated, reproducible analysis of human genotype data. Currently it has implemented three pipelines: genomic quality control (QC) for case/control studies; processing VCF files after imputation; and genome-wide association studies (GWAS). It wraps years of research at CGE Tübingen, leveraging PLINK 1.9/2.0, GCTA and bcftools and also providing rich reporting and visualizations.
+
+📄 IDEAL-GENOM is published in *G3: Genes, Genomes, Genetics*: [IDEAL-GENOM: Integrated Downstream Analytical Toolkit for Genomic Analysis](https://doi.org/10.1093/g3journal/jkag283). If you use it in your research, please [cite the paper](#citation).
 
 📌 Check out the [ECCB 2026 conference poster](https://LuisGiraldo86.github.io/ideal-genom-eccb2026/) presenting IDEAL-GENOM.
 
@@ -71,3 +75,19 @@ docker run -it ideal-genom /bin/bash
 ```
 
 This ensures reproducible and ready-to-use genomic analysis workflows.
+
+## Citation
+
+If you use IDEAL-GENOM in your research, please cite:
+
+> González Ricardo LG, Tenghe AMM, Sreelatha AAK, Sharma M. IDEAL-GENOM: Integrated Downstream Analytical Toolkit for Genomic Analysis. *G3: Genes, Genomes, Genetics*. 2026. doi:[10.1093/g3journal/jkag283](https://doi.org/10.1093/g3journal/jkag283)
+
+```bibtex
+@article{ideal_genom_g3_2026,
+  title   = {{IDEAL-GENOM}: Integrated Downstream Analytical Toolkit for Genomic Analysis},
+  author  = {Gonz{\'a}lez Ricardo, Luis Giraldo and Tenghe, Amabel M. M. and Sreelatha, Ashwin Ashok Kumar and Sharma, Manu},
+  journal = {G3: Genes, Genomes, Genetics},
+  year    = {2026},
+  doi     = {10.1093/g3journal/jkag283}
+}
+```
